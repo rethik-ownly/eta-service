@@ -14,6 +14,7 @@ type Config struct {
 	Mongo  MongoConfig  `json:"mongo"`
 	Server ServerConfig `json:"server"`
 	Log    LogConfig    `json:"log"`
+	HTTPTransport HTTPTransportConfig `json:"http_transport"`
 }
 
 func InitDefaultConfig() *Config {

@@ -30,3 +30,9 @@ mongo:
   
 log:
   level: debug
+
+httpTransport:
+  disableMetrics: false
+  maxIdleConnections: 10
+  maxConnectionsPerHost: 5
+  maxIdleConnectionsPerHost: 5

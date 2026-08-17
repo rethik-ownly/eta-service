@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/nutanalabs/eta-service/internal/config"
 	logger "github.com/nutanalabs/rapido-logger-go"
@@ -43,7 +42,7 @@ func NewMongoClient(config *config.Config) Client {
 		clientOptions.DisableConnectionPoolMetrics().DisableCommandMetrics()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*config.GetMongoConnectionTimeout())
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, clientOptions)
