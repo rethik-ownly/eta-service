@@ -10,6 +10,7 @@ import (
 var AppConfig Config
 
 type Config struct {
+	AppName string
 	Mongo  MongoConfig  `json:"mongo"`
 	Server ServerConfig `json:"server"`
 	Log    LogConfig    `json:"log"`
@@ -45,4 +46,9 @@ func InitConfig(configFile string) *Config {
 	fmt.Println(AppConfig)
 
 	return &AppConfig
+}
+
+// Getters
+func (c *Config) GetAppName() string {
+	return c.AppName
 }
