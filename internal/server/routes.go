@@ -10,6 +10,9 @@ type Handlers struct {
 }
 
 
+
+
 func (s *Server) InitRoutes(h Handlers) {
-	
+	router := s.routerGroups.rootRouter
+	h.ETAHandler.InitRoutes(router)
 }

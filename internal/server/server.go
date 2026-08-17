@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nutanalabs/eta-service/internal/config"
+	logger "github.com/nutanalabs/rapido-logger-go"
 )
 
 type Server struct {
@@ -66,10 +67,10 @@ func waitForShutDown(server *http.Server) {
 
 	err := server.Shutdown(ctx)
 	if err != nil {
-		// TODO : Log Error
+		logger.Error(logger.Format{Message: fmt.Sprintf("Server forced to shutdown: %v", err)})
 	}
 
-	fmt.Println("Server Shutdown complete")
+	logger.Info(logger.Format{Message: "server shutdown complete"})
 }
 
 

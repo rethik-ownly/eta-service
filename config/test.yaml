@@ -1,0 +1,32 @@
+server:
+  host: localhost
+  port: 8082
+
+mongo:
+  hosts: localhost:27017
+  user: root
+  password: root
+  database: eta
+  authSource: eta
+  appName: eta-service
+
+  maxPoolSize: 50
+  maxConnecting: 2
+  minPoolSize: 20
+
+  writeTimeoutInMs: 1000
+  readTimeoutInMs: 1000
+  maxIdleTimeInMs: 10000
+  connectTimeoutInMs: 10000
+
+  replicaSet: eta
+  readPreference: primary
+
+  retryWritesEnabled: false
+  retryReadsEnabled: false
+  
+  isHealthCheckEnabled: true
+  monitorMongoDriverEnabled: true
+  
+log:
+  level: debug

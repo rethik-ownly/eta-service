@@ -1,7 +1,48 @@
 package config
 
+import (
+	"fmt"
+
+	logger "github.com/nutanalabs/rapido-logger-go"
+	"github.com/spf13/viper"
+)
+
+var AppConfig Config
+
 type Config struct {
-	Mongo MongoConfig `json:"mongo"`
+	Mongo  MongoConfig  `json:"mongo"`
 	Server ServerConfig `json:"server"`
-	Log LogConfig `json:"log"`
+	Log    LogConfig    `json:"log"`
+}
+
+func InitDefaultConfig() *Config {
+	return InitConfig("application")
+}
+
+func InitConfig(configFile string) *Config {
+	fmt.Println(configFile)
+	viper.AutomaticEnv()
+	viper.SetConfigName(configFile)
+	viper.SetConfigType("yaml")
+	viper.SetEnvPrefix("rapido")
+	viper.AddConfigPath("config")
+	viper.AddConfigPath("../config/")
+	viper.AddConfigPath("../../config/")
+	viper.AddConfigPath("../../../config/")
+
+	if err := viper.ReadInConfig(); err != nil {
+		logger.Error(logger.Format{Message: fmt.Sprintf("Cannot read the config File: %s", err)})
+		panic(err)
+	}
+
+	logger.Info(logger.Format{Message: fmt.Sprintf("Using config file: '%s'", viper.ConfigFileUsed())})
+
+	if err := viper.Unmarshal(&AppConfig); err != nil {
+		logger.Error(logger.Format{Message: fmt.Sprintf("Cannot unmarshal the config File: %s", err)})
+		panic(err)
+	}
+
+	fmt.Println(AppConfig)
+
+	return &AppConfig
 }
