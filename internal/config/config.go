@@ -49,7 +49,13 @@ func InitConfig(configFile string) *Config {
 	return &AppConfig
 }
 
+
+
 // Getters
+func GetConfig() *Config {
+	return &AppConfig
+}
+
 func (c *Config) GetAppName() string {
 	return c.AppName
 }

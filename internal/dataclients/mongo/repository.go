@@ -27,7 +27,7 @@ type repositoryImpl struct {
 }
 
 
-func NewRepository(config *config.Config, mongoClient Client) Repository {
+func NewMongoRepository(config *config.Config, mongoClient Client) Repository {
 	return &repositoryImpl{
 		config:        config,
 		database: mongoClient.GetDatabase(),
