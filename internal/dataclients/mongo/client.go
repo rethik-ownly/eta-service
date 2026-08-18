@@ -12,7 +12,7 @@ import (
 
 type Client interface {
 	CheckHealth() error
-	GetDatabaseClient() *mongo.Database
+	GetDatabase() *mongo.Database
 	Disconnect() error
 }
 
@@ -71,7 +71,7 @@ func (c *clientImpl) CheckHealth() error {
 	return nil
 }
 
-func (c *clientImpl) GetDatabaseClient() *mongo.Database {
+func (c *clientImpl) GetDatabase() *mongo.Database {
 	return c.client.Database(c.config.GetDatabase())
 }
 
