@@ -1,11 +1,13 @@
 package etaservice
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
+	"github.com/nutanalabs/eta-service/internal/types"
 )
 
 type Handler struct {
@@ -19,6 +21,7 @@ func NewHandler(service service.Service) *Handler {
 }
 
 func (h *Handler) GetETA(ctx *gin.Context) {
+	restaurant_id := ctx.Query("restaurant_id")
 	lat, lon := ctx.Query("lat"), ctx.Query("lon")
 
 	// Validate latitude and longitude
@@ -35,13 +38,32 @@ func (h *Handler) GetETA(ctx *gin.Context) {
 	}
 	
 	// Call servie to get ETA
-	eta, err := h.service.GetETA(latFloat, lonFloat)
+	etaResponse , err := h.service.GetETA(restaurant_id, latFloat, lonFloat)
 	
-	// TODO : DTOtypes for request and response structure.
 	if err != nil {
+		// error response : TODO 
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get ETA"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"eta": eta})
+	ctx.JSON(http.StatusOK, etaResponse)
+}
+
+func (h *Handler) InsertETA(ctx *gin.Context) {
+	var insertEtaRequest types.InsertETARequest
+
+	if err := ctx.ShouldBindJSON(&insertEtaRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error" : "Invalid Body"})
+		return
+	}
+
+	err := h.service.InsertETA(&insertEtaRequest)
+
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error" : "Failed to insert ETA"})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, "Eta inserted")
 }

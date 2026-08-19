@@ -45,7 +45,7 @@ func (c *Config) GetMongoURI() string {
 	// Handle case where no authentication is required
 	if c.Mongo.User == "" || c.Mongo.Password == "" {
 		return fmt.Sprintf(
-			"mongodb://%s/%s?authSource=%s&appName=%s&maxConnecting=%d&maxPoolSize=%d&minPoolSize=%d&maxIdleTimeMS=%d&connectTimeoutMS=%d&readPreference=%s&replicaSet=%s&",
+			"mongodb://%s/%s?authSource=%s&appName=%s&maxConnecting=%d&maxPoolSize=%d&minPoolSize=%d&maxIdleTimeMS=%d&connectTimeoutMS=%d&readPreference=%s",
 			c.Mongo.Hosts,
 			c.Mongo.Database,
 			c.Mongo.AuthSource,
@@ -56,7 +56,7 @@ func (c *Config) GetMongoURI() string {
 			c.Mongo.MaxIdleTimeInMs,
 			c.Mongo.ConnectTimeoutInMs,
 			c.Mongo.ReadPreference,
-			c.Mongo.ReplicaSet,
+			// c.Mongo.ReplicaSet,
 		)
 	}
 

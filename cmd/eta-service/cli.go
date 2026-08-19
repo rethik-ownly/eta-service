@@ -28,7 +28,7 @@ func startCommand() *cobra.Command {
 		Short: "Starts the ETA service",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Initialize the config
-			configFile := "application"
+			configFile := "test"
 			if len(args) > 0 {
 				configFile = args[0]
 			}

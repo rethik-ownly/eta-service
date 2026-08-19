@@ -4,10 +4,10 @@ server:
 
 mongo:
   hosts: localhost:27017
-  user: root
-  password: root
-  database: eta
-  authSource: eta
+  user: ""
+  password: ""
+  database: etaDB
+  authSource: etaDB
   appName: eta-service
 
   maxPoolSize: 50
@@ -19,15 +19,15 @@ mongo:
   maxIdleTimeInMs: 10000
   connectTimeoutInMs: 10000
 
-  replicaSet: eta
+  replicaSet: ""
   readPreference: primary
 
   retryWritesEnabled: false
   retryReadsEnabled: false
-  
+
   isHealthCheckEnabled: true
   monitorMongoDriverEnabled: true
-  
+
 log:
   level: debug
 

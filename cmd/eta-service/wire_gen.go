@@ -21,13 +21,14 @@ import (
 func InitDependencies() (ServerDependencies, error) {
 	configConfig := config.GetConfig()
 	serverServer := server.NewServer(configConfig)
-	repositoryRepository := repository.NewRepository()
+	client := mongo.NewMongoClient(configConfig)
+	mongoRepository := mongo.NewMongoRepository(configConfig, client)
+	repositoryRepository := repository.NewRepository(mongoRepository)
 	serviceService := service.NewService(repositoryRepository)
 	handler := etaservice.NewHandler(serviceService)
 	handlers := server.Handlers{
 		ETAHandler: handler,
 	}
-	client := mongo.NewMongoClient(configConfig)
 	dataClients := dataclients.NewDataClients(configConfig, client)
 	serverDependencies := ServerDependencies{
 		config:      configConfig,
