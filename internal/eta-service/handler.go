@@ -67,3 +67,7 @@ func (h *Handler) InsertETA(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, "Eta inserted")
 }
+
+func (h *Handler) FetchEta(ctx *gin.Context) {
+	
+}

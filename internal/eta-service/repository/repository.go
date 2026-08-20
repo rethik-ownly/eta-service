@@ -11,6 +11,9 @@ type Repository interface {
 	GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lon float64) (*types.GetETAResponse, error)
 	// TODO : change time_slot to enum
 	InsertETA(insertEtaRequest *types.InsertETARequest) error
+
+	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
+	FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
 }
 
 type repositoryImpl struct {
@@ -29,7 +32,7 @@ func (r *repositoryImpl) GetETA(restaurant_id string, day_of_week string, time_s
 		"day_of_week": day_of_week,
 		"time_slot": time_slot,
 	}
-	result := r.mongoRepository.FindOne(constants.ETA_COLLECTION_NAME, filter, nil)
+	result := r.mongoRepository.FindOne(constants.ETA_RESTAURANT_ESTIMATES, filter, nil)
 
 
 	var response types.GetETAResponse
@@ -41,7 +44,39 @@ func (r *repositoryImpl) GetETA(restaurant_id string, day_of_week string, time_s
 }
 
 func (r *repositoryImpl) InsertETA(insertEtaRequest *types.InsertETARequest) error {
-	_ , err := r.mongoRepository.InsertOne(constants.ETA_COLLECTION_NAME, insertEtaRequest)
+	_ , err := r.mongoRepository.InsertOne(constants.ETA_RESTAURANT_ESTIMATES, insertEtaRequest)
 
 	return err
+}
+
+func (r *repositoryImpl) FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error) {
+	filter := bson.M{
+		"restaurant_id" : restaurant_id,
+		"day" : day, 
+		"mealType": mealType,
+	}
+
+	result := r.mongoRepository.FindOne(constants.ETA_RESTAURANT_ESTIMATES, filter, nil)
+
+	var response types.EtaRestaurantEstimates
+	if err := result.Decode(&response); err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (r *repositoryImpl) FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error) {
+	filter := bson.M{
+		"sublocality_id": sublocality_id,
+		"day": day,
+		"mealType": mealType,
+	}
+
+	result := r.mongoRepository.FindOne(constants.ETA_SUBLOCALITY_ESTIMATES, filter, nil)
+
+	var response types.EtaSublocalityEstimates
+	if err := result.Decode(&response); err != nil {
+		return nil, err
+	}
+	return &response, nil
 }
