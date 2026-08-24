@@ -14,6 +14,8 @@ import (
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
 	"github.com/nutanalabs/eta-service/internal/server"
+	"github.com/nutanalabs/eta-service/internal/utils/common"
+	utils2 "github.com/nutanalabs/eta-service/internal/utils/http"
 )
 
 // Injectors from di.go:
@@ -24,8 +26,10 @@ func InitDependencies() (ServerDependencies, error) {
 	client := mongo.NewMongoClient(configConfig)
 	mongoRepository := mongo.NewMongoRepository(configConfig, client)
 	repositoryRepository := repository.NewRepository(mongoRepository)
-	serviceService := service.NewService(repositoryRepository)
-	handler := etaservice.NewHandler(serviceService)
+	commonUtils := utils.NewCommonUtils()
+	serviceService := service.NewService(repositoryRepository, commonUtils)
+	httpUtils := utils2.NewHttpUtils()
+	handler := etaservice.NewHandler(serviceService, httpUtils)
 	handlers := server.Handlers{
 		ETAHandler: handler,
 	}

@@ -9,6 +9,7 @@ import (
 	etaservice "github.com/nutanalabs/eta-service/internal/eta-service"
 	// "github.com/nutanalabs/eta-service/internal/httpclient"
 	"github.com/nutanalabs/eta-service/internal/server"
+	"github.com/nutanalabs/eta-service/internal/utils"
 )
 
 type ServerDependencies struct {
@@ -27,6 +28,7 @@ func InitDependencies() (ServerDependencies, error) {
 		// httpclient.Wireset,
 		etaservice.Wireset,
 		dataclients.Wireset,
+		utils.Wireset,
 	)
 
 	return ServerDependencies{}, nil

@@ -1,11 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	"github.com/nutanalabs/eta-service/internal/types"
-	"github.com/nutanalabs/eta-service/internal/utils/common"
+	common "github.com/nutanalabs/eta-service/internal/utils/common"
 )
 
 type Service interface {
@@ -20,9 +21,10 @@ type serviceImpl struct {
 	commonUtils common.CommonUtils
 }
 
-func NewService(repository repository.Repository) Service {
+func NewService(repository repository.Repository, commonUtils common.CommonUtils) Service {
 	return &serviceImpl{
 		repository: repository,
+		commonUtils: commonUtils,
 	}
 }
 
@@ -36,6 +38,7 @@ func (s *serviceImpl) InsertETA(insertEtaRequest *types.InsertETARequest) error 
 }
 
 func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error) {
+	fmt.Println("In service")
 	// Time , day , mealtype
 	now := time.Now()
 	day := s.commonUtils.GetDayFromTime(now)

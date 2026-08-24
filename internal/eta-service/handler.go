@@ -8,15 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
 	"github.com/nutanalabs/eta-service/internal/types"
+	logger "github.com/nutanalabs/rapido-logger-go"
+	httpUtils "github.com/nutanalabs/eta-service/internal/utils/http"
 )
 
 type Handler struct {
 	service service.Service
+	httpUtils httpUtils.HTTPUtils
 }
 
-func NewHandler(service service.Service) *Handler {
+func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils) *Handler {
 	return &Handler{
 		service: service,
+		httpUtils: httpUtils,
 	}
 }
 
@@ -69,5 +73,42 @@ func (h *Handler) InsertETA(ctx *gin.Context) {
 }
 
 func (h *Handler) FetchEta(ctx *gin.Context) {
-	
+	fmt.Println("In controller")
+	method := ctx.Request.Method
+	route := ctx.FullPath()
+
+	var fetchEtaRequest types.FetchEtaRequest
+	if err := ctx.ShouldBindJSON(&fetchEtaRequest); err != nil {
+		logger.Error(logger.Format{
+			Event:   "BIND_FETCH_ETA_REQUEST",
+			Message: fmt.Sprintf("error binding request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	resp, err := h.service.FetchEta(&fetchEtaRequest)
+
+	if err != nil {
+		
+		logger.Error(logger.Format{
+			Event:   "FETCH_ETA_SERVICE_ERROR",
+			Message: "failed to fetch eta",
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		// TOdo : Resolve Error
+		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 }

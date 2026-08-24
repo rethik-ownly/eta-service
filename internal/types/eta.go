@@ -33,7 +33,7 @@ type FetchEtaRequestEntity struct {
 
 type FetchEtaRequest struct {
 	Surface      constants.Surface         `json:"surface" bson:"surface"`
-	DeliveryType constants.DeliveryType
+	DeliveryType constants.DeliveryType	   `json:"delivery_type" bson:"delivery_type"`
 	UserID       string                    `json:"user_id" bson:"user_id"`
 	UserLocation Location                  `json:"user_location" bson:"user_location"`
 	Options      FetchEtaRequestOptions    `json:"options" bson:"options"`
