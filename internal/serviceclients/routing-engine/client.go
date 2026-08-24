@@ -13,7 +13,7 @@ import (
 
 type RoutingEngineClient interface {
 	GetDistanceMatrix(request *DistanceMatrixRequest) (*DistanceMatrixResponse, error)
-	GetDistanceMatrixWithQoS(request *DistanceMatrixRequest, qos string) (*DistanceMatrixResponse, error)
+	GetDistanceMatrixWithQoS(request *DistanceMatrixRequest, qos constants.QosLevel) (*DistanceMatrixResponse, error)
 }
 
 type routingEngineClientImpl struct {
@@ -32,7 +32,7 @@ func (rec *routingEngineClientImpl) GetDistanceMatrix(request *DistanceMatrixReq
 	return rec.GetDistanceMatrixWithQoS(request, rec.config.ExternalServices.RoutingEngine.DistanceMatrixAPI.QosLevel)
 }
 
-func (rec *routingEngineClientImpl) GetDistanceMatrixWithQoS(request *DistanceMatrixRequest, qos string) (*DistanceMatrixResponse, error) {
+func (rec *routingEngineClientImpl) GetDistanceMatrixWithQoS(request *DistanceMatrixRequest, qos constants.QosLevel) (*DistanceMatrixResponse, error) {
 	if request == nil {
 		return nil, fmt.Errorf("request cannot be nil")
 	}
@@ -55,7 +55,9 @@ func (rec *routingEngineClientImpl) GetDistanceMatrixWithQoS(request *DistanceMa
 		rec.config.ExternalServices.RoutingEngine.Host,
 		rec.config.ExternalServices.RoutingEngine.Port,
 		rec.config.ExternalServices.RoutingEngine.DistanceMatrixAPI.Path,
-		qos)
+		string(qos))
+
+	fmt.Println(routingEngineURL)
 
 	requestBody, err := json.Marshal(request)
 	if err != nil {

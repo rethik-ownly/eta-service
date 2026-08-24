@@ -1,3 +1,5 @@
+appName: eta-service
+
 server:
   host: localhost
   port: 8082
@@ -36,3 +38,13 @@ httpTransport:
   maxIdleConnections: 10
   maxConnectionsPerHost: 5
   maxIdleConnectionsPerHost: 5
+  insecureSkipVerify: true
+
+externalServices:
+  routingEngine:
+    host: "https://rapido-routing-engine.nginx.svc.staging.internal"
+    port: 443
+    distanceMatrixAPI:
+      path: "/api/v1/routes/distanceMatrix"
+      timeoutInMs: 2000
+      qosLevel: "QOS3"

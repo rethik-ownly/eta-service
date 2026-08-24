@@ -13,7 +13,9 @@ import (
 	"github.com/nutanalabs/eta-service/internal/eta-service"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
+	"github.com/nutanalabs/eta-service/internal/httpclient"
 	"github.com/nutanalabs/eta-service/internal/server"
+	"github.com/nutanalabs/eta-service/internal/serviceclients/routing-engine"
 	"github.com/nutanalabs/eta-service/internal/utils/common"
 	utils2 "github.com/nutanalabs/eta-service/internal/utils/http"
 )
@@ -27,7 +29,9 @@ func InitDependencies() (ServerDependencies, error) {
 	mongoRepository := mongo.NewMongoRepository(configConfig, client)
 	repositoryRepository := repository.NewRepository(mongoRepository)
 	commonUtils := utils.NewCommonUtils()
-	serviceService := service.NewService(repositoryRepository, commonUtils)
+	httpclientClient := httpclient.NewHTTPClient(configConfig)
+	routingEngineClient := routingengine.NewRoutingEngineClient(configConfig, httpclientClient)
+	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient)
 	httpUtils := utils2.NewHttpUtils()
 	handler := etaservice.NewHandler(serviceService, httpUtils)
 	handlers := server.Handlers{

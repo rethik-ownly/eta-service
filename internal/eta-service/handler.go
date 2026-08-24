@@ -26,7 +26,7 @@ func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils) *Handler
 
 func (h *Handler) GetETA(ctx *gin.Context) {
 	restaurant_id := ctx.Query("restaurant_id")
-	lat, lon := ctx.Query("lat"), ctx.Query("lon")
+	lat, lng := ctx.Query("lat"), ctx.Query("lng")
 
 	// Validate latitude and longitude
 	latFloat, err := strconv.ParseFloat(lat, 64)
@@ -35,14 +35,14 @@ func (h *Handler) GetETA(ctx *gin.Context) {
 		return
 	}
 
-	lonFloat, err := strconv.ParseFloat(lon, 64)
+	lngFloat, err := strconv.ParseFloat(lng, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid longitude"})
 		return
 	}
 	
 	// Call servie to get ETA
-	etaResponse , err := h.service.GetETA(restaurant_id, latFloat, lonFloat)
+	etaResponse , err := h.service.GetETA(restaurant_id, latFloat, lngFloat)
 	
 	if err != nil {
 		// error response : TODO 

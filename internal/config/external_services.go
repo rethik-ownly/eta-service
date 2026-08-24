@@ -1,5 +1,7 @@
 package config
 
+import "github.com/nutanalabs/eta-service/internal/constants"
+
 type ExternalServicesConfig struct {
 	RoutingEngine RoutingEngineConfig `mapstructure:"routingEngine"`
 }
@@ -13,5 +15,5 @@ type RoutingEngineConfig struct {
 type DistanceMatrixAPIConfig struct {
 	Path        string `mapstructure:"path"`
 	TimeoutInMs int    `mapstructure:"timeoutInMs"`
-	QosLevel    string `mapstructure:"qosLevel"`
+	QosLevel    constants.QosLevel `mapstructure:"qosLevel"`
 }

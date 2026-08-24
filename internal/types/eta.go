@@ -5,88 +5,80 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-
-
-
 type Location struct {
 	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
+	Lng float64 `json:"lng"`
 }
 
-// Request types
-
 type GetETAResponse struct {
-	EtaID  				 string `json:"etaId" bson:"etaId"`
-	EtaInSeconds 		 uint `json:"eta_in_seconds" bson:"eta_in_seconds"`
-	CreatedAt            float64  `json:"createdAt" bson:"createdAt"`
-	UpdatedAt            float64  `json:"updatedAt" bson:"updatedAt"`
+	EtaID        string  `json:"etaId" bson:"etaId"`
+	EtaInSeconds uint    `json:"etaInSeconds" bson:"etaInSeconds"`
+	CreatedAt    float64 `json:"createdAt" bson:"createdAt"`
+	UpdatedAt    float64 `json:"updatedAt" bson:"updatedAt"`
 }
 
 type FetchEtaRequestOptions struct {
-	QosLevel constants.QosLevel `json:"qos_level"`
+	QosLevel constants.QosLevel `json:"qosLevel"`
 }
 
 type FetchEtaRequestEntity struct {
-	RestaurantID string `json:"restaurant_id"`
-	RestaurantLocation Location `json:"restaurant_location"`
+	RestaurantID       string   `json:"restaurantId"`
+	RestaurantLocation Location `json:"restaurantLocation"`
 }
 
 type FetchEtaRequest struct {
-	Surface      constants.Surface         `json:"surface" bson:"surface"`
-	DeliveryType constants.DeliveryType	   `json:"delivery_type" bson:"delivery_type"`
-	UserID       string                    `json:"user_id" bson:"user_id"`
-	UserLocation Location                  `json:"user_location" bson:"user_location"`
-	Options      FetchEtaRequestOptions    `json:"options" bson:"options"`
-	Entities     []FetchEtaRequestEntity   `json:"entities" bson:"entities"`
+	Surface      constants.Surface      `json:"surface" bson:"surface"`
+	DeliveryType constants.DeliveryType `json:"deliveryType" bson:"deliveryType"`
+	UserID       string                 `json:"userId" bson:"userId"`
+	UserLocation Location               `json:"userLocation" bson:"userLocation"`
+	Options      FetchEtaRequestOptions `json:"options" bson:"options"`
+	Entities     []FetchEtaRequestEntity `json:"entities" bson:"entities"`
 }
 
-// Response types
-
 type InsertETARequest struct {
-	RestaurantID string `json:"restaurant_id" bson:"restaurant_id"`
-	DayOfWeek string `json:"day_of_week" bson:"day_of_week"`
-	TimeSlot string `json:"time_slot" bson:"time_slot"`
-	Lat float64 `json:"lat" bson:"lat"`
-	Lon float64 `json:"lon" bson:"lon"`
-	Eta uint `json:"eta" bson:"eta"`
-	CreatedAt            float64  `json:"createdAt" bson:"createdAt"`
-	UpdatedAt            float64  `json:"updatedAt" bson:"updatedAt"`
+	RestaurantID string  `json:"restaurantId" bson:"restaurantId"`
+	DayOfWeek    string  `json:"dayOfWeek" bson:"dayOfWeek"`
+	TimeSlot     string  `json:"timeSlot" bson:"timeSlot"`
+	Lat          float64 `json:"lat" bson:"lat"`
+	Lng        float64 `json:"lng" bson:"lng"`
+	Eta          uint    `json:"eta" bson:"eta"`
+	CreatedAt    float64 `json:"createdAt" bson:"createdAt"`
+	UpdatedAt    float64 `json:"updatedAt" bson:"updatedAt"`
 }
 
 type FetchEtaResponse struct {
-	RestaurantID string `json:"restaurant_id"`
-	EtaInSeconds uint `json:"eta_in_seconds"`
-	DisplayMin uint	`json:"display_min"`
-	DisplayMax uint	`json:"display_max"`
+	RestaurantID string `json:"restaurantId"`
+	EtaInSeconds uint   `json:"etaInSeconds"`
+	DisplayMin   uint   `json:"displayMin,omitempty"`
+	DisplayMax   uint   `json:"displayMax,omitempty"`
 }
 
-//
 type EtaRestaurantEstimates struct {
-	ID 				  primitive.ObjectID 	`bson:"_id,omitempty"`
-	RestaurantID 	  string  				`bson:"restaurant_id"`
-    RatSeconds        *float64  			`bson:"rat_seconds,omitempty"`
-    RatSampleCount    *int      			`bson:"rat_sample_count,omitempty"`
-    KptSeconds        *float64				`bson:"kpt_seconds,omitempty"`
-    KptSampleCount    *int					`bson:"kpt_sample_count,omitempty"`
-    PickupSeconds     *float64				`bson:"pickup_seconds,omitempty"`
-    PickupSampleCount *int					`bson:"pickup_sample_count,omitempty"`
-	MealType 		  constants.MealType 	`bson:"meal_type"`
-	Day 			  constants.Day			`bson:"day"`
-	CityID 			  string 				`bson:"city_id"`
-	ZoneID 			  string 				`bson:"zone_id"`
-	SublocalityID 	  string 				`bson:"sublocality_id"`
+	ID                primitive.ObjectID `bson:"_id,omitempty"`
+	RestaurantID      string             `bson:"restaurantId"`
+	RatSeconds        *float64           `bson:"ratSeconds,omitempty"`
+	RatSampleCount    *int               `bson:"ratSampleCount,omitempty"`
+	KptSeconds        *float64           `bson:"kptSeconds,omitempty"`
+	KptSampleCount    *int               `bson:"kptSampleCount,omitempty"`
+	PickupSeconds     *float64           `bson:"pickupSeconds,omitempty"`
+	PickupSampleCount *int               `bson:"pickupSampleCount,omitempty"`
+	MealType          constants.MealType `bson:"mealType"`
+	Day               constants.Day      `bson:"day"`
+	CityID            string             `bson:"cityId"`
+	ZoneID            string             `bson:"zoneId"`
+	SublocalityID     string             `bson:"sublocalityId"`
 }
 
 type EtaSublocalityEstimates struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty"`
-	SublocalityID string             `bson:"sublocality_id"`
-	ZoneID        string             `bson:"zone_id,omitempty"`
-    CityID        string             `bson:"city_id"`
-	MealType     constants.MealType `bson:"meal_type"`
-	Day 	 constants.Day       `bson:"day"`
-	CatSeconds 	   *float64 		`bson:"cat_seconds,omitempty"`
-	CatSampleCount *int 			`bson:"cat_sample_count,omitempty"`
-	FmSeconds *float64 `bson:"fm_seconds,omitempty"`
-	FmSampleCount *int `bson:"fm_sample_count"`
-	UpdatedAt  float64		`bson:"updatedAt"`
+	ID             primitive.ObjectID `bson:"_id,omitempty"`
+	SublocalityID  string             `bson:"sublocalityId"`
+	ZoneID         string             `bson:"zoneId,omitempty"`
+	CityID         string             `bson:"cityId"`
+	MealType       constants.MealType `bson:"mealType"`
+	Day            constants.Day      `bson:"day"`
+	CatSeconds     *float64           `bson:"catSeconds,omitempty"`
+	CatSampleCount *int               `bson:"catSampleCount,omitempty"`
+	FmSeconds      *float64           `bson:"fmSeconds,omitempty"`
+	FmSampleCount  *int               `bson:"fmSampleCount"`
+	UpdatedAt      float64            `bson:"updatedAt"`
 }

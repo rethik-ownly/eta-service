@@ -1,13 +1,10 @@
 package routingengine
 
-type Location struct {
-	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
-}
+import "github.com/nutanalabs/eta-service/internal/types"
 
 type DistanceMatrixRequest struct {
-	Sources                []Location              `json:"sources"`
-	Destinations           []Location              `json:"destinations"`
+	Sources                []types.Location              `json:"sources"`
+	Destinations           []types.Location            `json:"destinations"`
 	SourceDestinationPairs []SourceDestinationPair `json:"sourceDestinationPairs,omitempty"`
 	Vehicle                string                  `json:"vehicle,omitempty"`
 	RoutingPreference      string                  `json:"routingPreference,omitempty"`

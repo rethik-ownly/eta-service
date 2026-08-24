@@ -47,7 +47,7 @@ const (
 type QosLevel string
 
 const (
-	QosOne QosLevel = "QOS1"
-	QosTwo QosLevel = "QOS2"
-	QosThree QosLevel = "QOS3"
+	QosOne QosLevel = "qos1"
+	QosTwo QosLevel = "qos2"
+	QosThree QosLevel = "qos3"
 )

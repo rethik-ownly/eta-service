@@ -8,7 +8,7 @@ import (
 )
 
 type Repository interface {
-	GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lon float64) (*types.GetETAResponse, error)
+	GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lng float64) (*types.GetETAResponse, error)
 	// TODO : change time_slot to enum
 	InsertETA(insertEtaRequest *types.InsertETARequest) error
 
@@ -26,7 +26,7 @@ func NewRepository(mongoRepository mongo.Repository) Repository {
 	}
 }
 
-func (r *repositoryImpl) GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lon float64) (*types.GetETAResponse, error) {
+func (r *repositoryImpl) GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lng float64) (*types.GetETAResponse, error) {
 	filter := bson.M{
 		"restaurant_id": restaurant_id,
 		"day_of_week": day_of_week,
@@ -51,7 +51,7 @@ func (r *repositoryImpl) InsertETA(insertEtaRequest *types.InsertETARequest) err
 
 func (r *repositoryImpl) FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error) {
 	filter := bson.M{
-		"restaurant_id" : restaurant_id,
+		"restaurantId" : restaurant_id,
 		"day" : day, 
 		"mealType": mealType,
 	}
@@ -67,7 +67,7 @@ func (r *repositoryImpl) FetchRestaurantEstimates(restaurant_id string, day cons
 
 func (r *repositoryImpl) FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error) {
 	filter := bson.M{
-		"sublocality_id": sublocality_id,
+		"sublocalityId": sublocality_id,
 		"day": day,
 		"mealType": mealType,
 	}

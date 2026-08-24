@@ -7,9 +7,10 @@ import (
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/dataclients"
 	etaservice "github.com/nutanalabs/eta-service/internal/eta-service"
-	// "github.com/nutanalabs/eta-service/internal/httpclient"
+	"github.com/nutanalabs/eta-service/internal/httpclient"
 	"github.com/nutanalabs/eta-service/internal/server"
 	"github.com/nutanalabs/eta-service/internal/utils"
+	routingengine "github.com/nutanalabs/eta-service/internal/serviceclients/routing-engine"
 )
 
 type ServerDependencies struct {
@@ -25,10 +26,11 @@ func InitDependencies() (ServerDependencies, error) {
 		wire.Struct(new(server.Handlers), "*"),
 		config.GetConfig,
 		server.Wireset,
-		// httpclient.Wireset,
+		httpclient.Wireset,
 		etaservice.Wireset,
 		dataclients.Wireset,
 		utils.Wireset,
+		routingengine.Wireset,
 	)
 
 	return ServerDependencies{}, nil
