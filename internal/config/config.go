@@ -15,6 +15,7 @@ type Config struct {
 	Server ServerConfig `json:"server"`
 	Log    LogConfig    `json:"log"`
 	HTTPTransport HTTPTransportConfig `json:"http_transport"`
+	ExternalServices ExternalServicesConfig `mapstructure:"externalServices"`
 }
 
 func InitDefaultConfig() *Config {
