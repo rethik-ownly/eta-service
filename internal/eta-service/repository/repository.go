@@ -4,6 +4,7 @@ import (
 	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/dataclients/mongo"
 	"github.com/nutanalabs/eta-service/internal/types"
+	"github.com/nutanalabs/rapido-mongo-go/mongo/results"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -14,6 +15,8 @@ type Repository interface {
 
 	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
 	FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
+	FetchRestaurantEstimatesByIDs(restaurantsID []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error)
+	FetchSublocalityEstimatesByIDs(sublocalitiesID map[string]struct{}, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error)
 }
 
 type repositoryImpl struct {
@@ -79,4 +82,64 @@ func (r *repositoryImpl) FetchSublocalityEstimates(sublocality_id string, day co
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (r *repositoryImpl) FetchRestaurantEstimatesByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error) {
+	filter := bson.M{
+		"restaurantId": bson.M{
+			"$in": restaurantsId,
+		},
+		"day": day,
+		"mealType": mealType,
+	}
+
+	var restaurantsEstimates []types.EtaRestaurantEstimates
+	queryResponse := results.QueryResponse{
+		Data: &restaurantsEstimates,
+	}
+
+	err := r.mongoRepository.FindMany(constants.ETA_RESTAURANT_ESTIMATES, filter, &queryResponse, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if data, ok := queryResponse.Data.(*[]types.EtaRestaurantEstimates); ok && data != nil {
+		return *data, nil
+	}
+
+	return []types.EtaRestaurantEstimates{}, nil
+}
+
+func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId map[string]struct{}, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error) {
+	ids := make([]string, 0, len(sublocalitiesId))
+	for id := range sublocalitiesId {
+		ids = append(ids, id)
+	}
+
+	filter := bson.M{
+		"sublocalityId": bson.M{
+			"$in": ids,
+		},
+		"day": day,
+		"mealType": mealType,
+	}
+
+	var sublocalitiesEstimates []types.EtaSublocalityEstimates
+	queryResponse := results.QueryResponse{
+		Data: &sublocalitiesEstimates,
+	}
+
+	err := r.mongoRepository.FindMany(constants.ETA_SUBLOCALITY_ESTIMATES, filter, &queryResponse, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if data, ok := queryResponse.Data.(*[]types.EtaSublocalityEstimates); ok && data != nil {
+		return *data, nil
+	}
+
+
+	return []types.EtaSublocalityEstimates{}, nil
 }
