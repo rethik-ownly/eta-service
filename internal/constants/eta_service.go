@@ -11,6 +11,15 @@ const (
 	Promise Surface = "PROMISE"
 )
 
+func (s Surface) IsValid() bool {
+	switch s {
+	case Search, Feed, Restaurant, Cart, Promise:
+		return true
+	default:
+		return false
+	}
+}
+
 // Day_Type
 type Day string
 
@@ -24,6 +33,15 @@ const (
 	Sunday Day = "SUNDAY"
 )
 
+func (d Day) IsValid() bool {
+	switch d {
+	case Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday:
+		return true
+	default:
+		return false
+	}
+}
+
 // Meal_Type
 type MealType string
 
@@ -35,6 +53,15 @@ const (
 	Snack MealType = "SNACK"
 )
 
+func (mt MealType) IsValid() bool{
+	switch mt {
+	case Breakfast, LateNight, Lunch, Dinner, Snack:
+		return true
+	default:
+		return false
+	}
+}
+
 // eta_delivery_type
 type DeliveryType string
 
@@ -42,6 +69,15 @@ const (
 	Standard DeliveryType = "STANDARD"
 	Express DeliveryType = "EXPRESS"
 )
+
+func (dt DeliveryType) IsValid() bool {
+	switch dt {
+	case Standard, Express:
+		return true
+	default:
+		return false
+	}
+}
 
 // Qos_Level
 type QosLevel string
@@ -51,3 +87,12 @@ const (
 	QosTwo QosLevel = "qos2"
 	QosThree QosLevel = "qos3"
 )
+
+func (q QosLevel) IsValid() bool {
+	switch q{
+	case QosOne,QosTwo,QosThree:
+		return true
+	default:
+		return false
+	}
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/nutanalabs/eta-service/internal/eta-service"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
+	"github.com/nutanalabs/eta-service/internal/eta-service/validator"
 	"github.com/nutanalabs/eta-service/internal/httpclient"
 	"github.com/nutanalabs/eta-service/internal/server"
 	"github.com/nutanalabs/eta-service/internal/serviceclients/routing-engine"
@@ -33,7 +34,8 @@ func InitDependencies() (ServerDependencies, error) {
 	routingEngineClient := routingengine.NewRoutingEngineClient(configConfig, httpclientClient)
 	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient)
 	httpUtils := utils2.NewHttpUtils()
-	handler := etaservice.NewHandler(serviceService, httpUtils)
+	validatorValidator := validator.NewValidator(configConfig)
+	handler := etaservice.NewHandler(serviceService, httpUtils, validatorValidator)
 	handlers := server.Handlers{
 		ETAHandler: handler,
 	}

@@ -7,20 +7,23 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
+	"github.com/nutanalabs/eta-service/internal/eta-service/validator"
 	"github.com/nutanalabs/eta-service/internal/types"
-	logger "github.com/nutanalabs/rapido-logger-go"
 	httpUtils "github.com/nutanalabs/eta-service/internal/utils/http"
+	logger "github.com/nutanalabs/rapido-logger-go"
 )
 
 type Handler struct {
 	service service.Service
 	httpUtils httpUtils.HTTPUtils
+	validator validator.Validator
 }
 
-func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils) *Handler {
+func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils, validator validator.Validator) *Handler {
 	return &Handler{
 		service: service,
 		httpUtils: httpUtils,
+		validator: validator,
 	}
 }
 
@@ -82,6 +85,21 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 		logger.Error(logger.Format{
 			Event:   "BIND_FETCH_ETA_REQUEST",
 			Message: fmt.Sprintf("error binding request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	// Do validation 
+	if err := h.validator.ValidateFetchEtaRequest(&fetchEtaRequest) ; err != nil {
+		logger.Error(logger.Format{
+			Event: "VALIDATE_FETCH_ETA_REQUEST",
+			Message: fmt.Sprintf("error validating request with err: %v", err),
 			Data: map[string]string{
 				"error":  err.Error(),
 				"method": method,
