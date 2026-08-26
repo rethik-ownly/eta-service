@@ -14,7 +14,7 @@ type Repository interface {
 	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
 	FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
 	FetchRestaurantEstimatesByIDs(restaurantsID []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error)
-	FetchSublocalityEstimatesByIDs(sublocalitiesID map[string]struct{}, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error)
+	FetchSublocalityEstimatesByIDs(sublocalitiesID []string, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error)
 }
 
 type repositoryImpl struct {
@@ -93,15 +93,10 @@ func (r *repositoryImpl) FetchRestaurantEstimatesByIDs(restaurantsId []string, d
 	return []types.EtaRestaurantEstimates{}, nil
 }
 
-func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId map[string]struct{}, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error) {
-	ids := make([]string, 0, len(sublocalitiesId))
-	for id := range sublocalitiesId {
-		ids = append(ids, id)
-	}
-
+func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error) {
 	filter := bson.M{
 		"sublocalityId": bson.M{
-			"$in": ids,
+			"$in": sublocalitiesId,
 		},
 		"day": day,
 		"mealType": mealType,

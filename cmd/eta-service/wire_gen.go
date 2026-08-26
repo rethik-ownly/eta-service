@@ -32,7 +32,7 @@ func InitDependencies() (ServerDependencies, error) {
 	commonUtils := utils.NewCommonUtils()
 	httpclientClient := httpclient.NewHTTPClient(configConfig)
 	routingEngineClient := routingengine.NewRoutingEngineClient(configConfig, httpclientClient)
-	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient)
+	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient, configConfig)
 	httpUtils := utils2.NewHttpUtils()
 	validatorValidator := validator.NewValidator(configConfig)
 	handler := etaservice.NewHandler(serviceService, httpUtils, validatorValidator)

@@ -32,7 +32,7 @@ func (v *validatorImpl) ValidateFetchEtaRequest(request *types.FetchEtaRequest) 
 	if request.UserID == "" {
 		return types.NewBadRequestError("invalid userId")
 	}
-	if request.Entities == nil {
+	if request.Entities == nil || len(request.Entities) > v.config.Eta.MaxEntities {
 		return types.NewBadRequestError("invalid entities")
 	}
 	return nil

@@ -36,6 +36,9 @@ type MongoConfig struct {
 	// Observability 
 	IsHealthCheckEnabled      bool
 	MonitorMongoDriverEnabled bool
+
+	// Batch Size
+	QueryBatchSize int
 }
 
 // TODO : Do we need Hidden Hosts ?

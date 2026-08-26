@@ -30,6 +30,8 @@ mongo:
   isHealthCheckEnabled: true
   monitorMongoDriverEnabled: true
 
+  queryBatchSize: 100
+
 redis:
   hosts: localhost:6379
   password: ""
@@ -54,3 +56,6 @@ externalServices:
       path: "/api/v1/routes/distanceMatrix"
       timeoutInMs: 2000
       qosLevel: "QOS3"
+  
+eta:
+  maxEntities: 100
