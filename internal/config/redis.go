@@ -13,6 +13,8 @@ type RedisConfig struct {
 	Addresses []string
 	ConnectionTimeoutInMs int
 	QueryTimeoutInMs int
+	IsHealthCheckEnabled bool
+	IsMetricsEnabled bool
 }
 
 type RedisHosts struct {

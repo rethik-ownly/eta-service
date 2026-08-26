@@ -37,6 +37,8 @@ redis:
   password: ""
   connectionTimeoutInMs: 1000
   queryTimeoutInMs: 1000
+  isHealthCheckEnabled: true
+  isMetricsEnabled: true
 
 log:
   level: debug

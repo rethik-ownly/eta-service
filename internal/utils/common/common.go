@@ -1,14 +1,19 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/nutanalabs/eta-service/internal/constants"
+	logger "github.com/nutanalabs/rapido-logger-go"
 )
 
 type CommonUtils interface {
 	GetDayFromTime(t time.Time) constants.Day
 	GetMealTypeFromTime(t time.Time) constants.MealType
+
+    ToJSON(data interface{}) string
 }
 
 type commonUtilImpl struct {}
@@ -52,4 +57,15 @@ func (c *commonUtilImpl) GetMealTypeFromTime(t time.Time) constants.MealType {
     default:
         return constants.LateNight
     }
+}
+
+func (c *commonUtilImpl) ToJSON(data interface{}) string {
+    b, err := json.Marshal(data)
+	if err != nil {
+		logger.Error(logger.Format{
+			Message: fmt.Sprintf("Error in ToJSON - %s", err),
+		})
+		return ""
+	}
+	return string(b)
 }

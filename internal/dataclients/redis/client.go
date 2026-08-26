@@ -1,125 +1,84 @@
 package redis
 
 import (
-	"context"
 	"fmt"
 	"time"
+
 	"github.com/nutanalabs/eta-service/internal/config"
 	logger "github.com/nutanalabs/rapido-logger-go"
-	"github.com/redis/go-redis/v9"
+	redislib "github.com/nutanalabs/rapido-redis-go/redis"
+	redisliboptions "github.com/nutanalabs/rapido-redis-go/redis/clientoptions"
 )
 
 type Client interface {
 	CheckHealth() error
-	GetClient() *redis.ClusterClient
+	GetClient() redislib.Client
 	Close() error
 }
 
 type clientImpl struct {
 	config *config.Config
-	clusterClient *redis.ClusterClient
+	client redislib.Client
 }
 
 func NewRedisClient(config *config.Config) Client {
-	err := config.Redis.ParseHosts()
-
+	client, err := newRedisClient(config)
 	if err != nil {
-		logger.Error(logger.Format{
-			Event: "ERROR_PARSING_REDIS_HOSTS",
-			Message: fmt.Sprintf("error parsing redis client : %v", err),
-		})
+		panic(fmt.Sprintf("error connecting to redis client : %v", err))
 	}
-
-	clusterClient, err := newRedisClusterClient(config.Redis)
-	if err != nil {
-		logger.Error(logger.Format{
-			Event:   "REDIS_CLIENT_CONNECTION_TIMEOUT",
-			Message: fmt.Sprintf("error connecting to redis client : %v", err),
-		})
-	}
-
 	return &clientImpl{
 		config: config,
-		clusterClient: clusterClient,
+		client: client,
 	}
 }
-
-func newRedisClusterClient(redisConfig config.RedisConfig) (*redis.ClusterClient, error) {
-	logEventName := "redis.client.newRedisClusterClient"
-
-	logger.Info(logger.Format{
-		Event:  logEventName,
-		Message: "Initializing redis connection",
-	})
-	clusterOptions := &redis.ClusterOptions{
-		Addrs: redisConfig.Addresses,
-		Password: redisConfig.Password,
-		ReadTimeout: time.Duration(redisConfig.QueryTimeoutInMs),
-		WriteTimeout: time.Duration(redisConfig.QueryTimeoutInMs),
-	}
-
-	rdb := redis.NewClusterClient(clusterOptions)
-
-	pong, err := checkRedisClusterHealth(rdb, redisConfig.ConnectionTimeoutInMs)
-	if err != nil {
-		logger.Error(logger.Format{
-			Event:   logEventName,
-			Message: fmt.Sprintf("Error creating redis client: %v", err),
-		})
-		return rdb, err
-	}
-
-	logger.Info(logger.Format{
-		Event:   logEventName,
-		Message: fmt.Sprintf("Successfully connected to redis %v", pong),
-	})
-
-	return rdb, nil
-} 
 
 func (c *clientImpl) CheckHealth() error {
-	_, err := checkRedisClusterHealth(c.clusterClient, c.config.Redis.ConnectionTimeoutInMs)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func checkRedisClusterHealth(redisClient *redis.ClusterClient, connectionTimeoutInMs int) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(connectionTimeoutInMs)*time.Millisecond)
-	defer cancel()
-
-	pong, err := redisClient.Ping(ctx).Result()
-
-	if err != nil {
-		logger.Error(logger.Format{
-			Event:   "REDIS_CLUSTER_HEALTH_CHECK",
-			Message: fmt.Sprintf("error while redis health check %v", err),
-		})
-		return "", err
+	options := &redisliboptions.HealthQueryOptions{
+		TimeoutInMS: &c.config.Redis.ConnectionTimeoutInMs,
 	}
 
-	return pong, nil
+	return c.client.CheckHealth(options)
 }
 
-func (c *clientImpl) GetClient() *redis.ClusterClient {
-	return c.clusterClient
+func (c *clientImpl) GetClient() redislib.Client {
+	return c.client
 }
 
 func (c *clientImpl) Close() error {
-	redisClient := c.clusterClient
-	err := redisClient.Close()
-	if err != nil {
+	if err := c.client.Disconnect(); err != nil {
 		logger.Error(logger.Format{
-			Message: fmt.Sprintf(
-				"error while closing redis client: redisClusterClientErr=>%v",
-				err,
-			),
+			Event:   "CLOSE_REDIS_CONNECTION",
+			Message: fmt.Sprintf("error closing Redis connection: %v", err),
 		})
-		return fmt.Errorf(
-			"{redisClusterClientCloseErr}: %v",
-			err,
-		)
+		return err
 	}
+
+	logger.Info(logger.Format{
+		Event:   "CLOSE_REDIS_CONNECTION",
+		Message: "Redis connection closed successfully",
+	})
 	return nil
+}
+
+func newRedisClient(config *config.Config) (redislib.Client, error) {
+	logger.Info(logger.Format{
+		Event:   "NEW_REDIS_CLIENT",
+		Message: "initializing redis client connection",
+	})
+	return redislib.Connect(getRedisClientOptions(config)) 
+}
+
+func getRedisClientOptions(config *config.Config) *redisliboptions.ClientOptions {
+	metricsOptions := &redisliboptions.MetricOptions{}
+	metricsOptions.SetEnabled(config.Redis.IsMetricsEnabled)
+
+	clientOptions := &redisliboptions.ClientOptions{}
+
+	clientOptions.
+		SetApplicationName(config.GetAppName()).
+		SetAddress(config.GetAddresses()).
+		SetPassword(config.Redis.Password).
+		SetConnectionTimeout(time.Duration(config.Redis.ConnectionTimeoutInMs) * time.Millisecond).
+		SetMetrics(metricsOptions)
+	return clientOptions
 }
