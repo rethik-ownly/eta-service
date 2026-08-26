@@ -3,7 +3,6 @@ package etaservice
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
@@ -27,34 +26,6 @@ func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils, validato
 	}
 }
 
-func (h *Handler) GetETA(ctx *gin.Context) {
-	restaurant_id := ctx.Query("restaurant_id")
-	lat, lng := ctx.Query("lat"), ctx.Query("lng")
-
-	// Validate latitude and longitude
-	latFloat, err := strconv.ParseFloat(lat, 64)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid latitude"})
-		return
-	}
-
-	lngFloat, err := strconv.ParseFloat(lng, 64)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid longitude"})
-		return
-	}
-	
-	// Call servie to get ETA
-	etaResponse , err := h.service.GetETA(restaurant_id, latFloat, lngFloat)
-	
-	if err != nil {
-		// error response : TODO 
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get ETA"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, etaResponse)
-}
 
 func (h *Handler) InsertETA(ctx *gin.Context) {
 	var insertEtaRequest types.InsertETARequest

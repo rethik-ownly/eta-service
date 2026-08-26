@@ -30,6 +30,12 @@ mongo:
   isHealthCheckEnabled: true
   monitorMongoDriverEnabled: true
 
+redis:
+  hosts: localhost:6379
+  password: ""
+  connectionTimeoutInMs: 1000
+  queryTimeoutInMs: 1000
+
 log:
   level: debug
 

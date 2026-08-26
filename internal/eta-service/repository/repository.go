@@ -9,8 +9,6 @@ import (
 )
 
 type Repository interface {
-	GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lng float64) (*types.GetETAResponse, error)
-	// TODO : change time_slot to enum
 	InsertETA(insertEtaRequest *types.InsertETARequest) error
 
 	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
@@ -29,22 +27,6 @@ func NewRepository(mongoRepository mongo.Repository) Repository {
 	}
 }
 
-func (r *repositoryImpl) GetETA(restaurant_id string, day_of_week string, time_slot string, lat, lng float64) (*types.GetETAResponse, error) {
-	filter := bson.M{
-		"restaurant_id": restaurant_id,
-		"day_of_week": day_of_week,
-		"time_slot": time_slot,
-	}
-	result := r.mongoRepository.FindOne(constants.ETA_RESTAURANT_ESTIMATES, filter, nil)
-
-
-	var response types.GetETAResponse
-	if err := result.Decode(&response); err != nil {
-		return nil, err
-	}
-
-	return &response, nil
-}
 
 func (r *repositoryImpl) InsertETA(insertEtaRequest *types.InsertETARequest) error {
 	_ , err := r.mongoRepository.InsertOne(constants.ETA_RESTAURANT_ESTIMATES, insertEtaRequest)
@@ -142,4 +124,8 @@ func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId map[stri
 
 
 	return []types.EtaSublocalityEstimates{}, nil
+}
+
+func (r *repositoryImpl) FetchPlatformDefaults() {
+	
 }

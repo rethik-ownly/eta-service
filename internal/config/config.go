@@ -12,6 +12,7 @@ var AppConfig Config
 type Config struct {
 	AppName string
 	Mongo  MongoConfig  `json:"mongo"`
+	Redis  RedisConfig  `mapstructure:"redis" json:"redis"`
 	Server ServerConfig `json:"server"`
 	Log    LogConfig    `json:"log"`
 	HTTPTransport HTTPTransportConfig `json:"http_transport"`

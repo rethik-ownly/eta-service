@@ -10,13 +10,6 @@ type Location struct {
 	Lng float64 `json:"lng"`
 }
 
-type GetETAResponse struct {
-	EtaID        string  `json:"etaId" bson:"etaId"`
-	EtaInSeconds uint    `json:"etaInSeconds" bson:"etaInSeconds"`
-	CreatedAt    float64 `json:"createdAt" bson:"createdAt"`
-	UpdatedAt    float64 `json:"updatedAt" bson:"updatedAt"`
-}
-
 type FetchEtaRequestOptions struct {
 	QosLevel constants.QosLevel `json:"qosLevel"`
 }
@@ -56,12 +49,12 @@ type FetchEtaResponse struct {
 type EtaRestaurantEstimates struct {
 	ID                primitive.ObjectID `bson:"_id,omitempty"`
 	RestaurantID      string             `bson:"restaurantId"`
-	RatSeconds        *float64           `bson:"ratSeconds,omitempty"`
-	RatSampleCount    *int               `bson:"ratSampleCount,omitempty"`
-	KptSeconds        *float64           `bson:"kptSeconds,omitempty"`
-	KptSampleCount    *int               `bson:"kptSampleCount,omitempty"`
-	PickupSeconds     *float64           `bson:"pickupSeconds,omitempty"`
-	PickupSampleCount *int               `bson:"pickupSampleCount,omitempty"`
+	RatSeconds        float64           `bson:"ratSeconds,omitempty"`
+	RatSampleCount    int               `bson:"ratSampleCount,omitempty"`
+	KptSeconds        float64           `bson:"kptSeconds,omitempty"`
+	KptSampleCount    int               `bson:"kptSampleCount,omitempty"`
+	PickupSeconds     float64           `bson:"pickupSeconds,omitempty"`
+	PickupSampleCount int               `bson:"pickupSampleCount,omitempty"`
 	MealType          constants.MealType `bson:"mealType"`
 	Day               constants.Day      `bson:"day"`
 	CityID            string             `bson:"cityId"`
@@ -76,9 +69,20 @@ type EtaSublocalityEstimates struct {
 	CityID         string             `bson:"cityId"`
 	MealType       constants.MealType `bson:"mealType"`
 	Day            constants.Day      `bson:"day"`
-	CatSeconds     *float64           `bson:"catSeconds,omitempty"`
-	CatSampleCount *int               `bson:"catSampleCount,omitempty"`
-	FmSeconds      *float64           `bson:"fmSeconds,omitempty"`
-	FmSampleCount  *int               `bson:"fmSampleCount"`
+	CatSeconds     float64           `bson:"catSeconds,omitempty"`
+	CatSampleCount int               `bson:"catSampleCount,omitempty"`
+	FmSeconds      float64           `bson:"fmSeconds,omitempty"`
+	FmSampleCount  int               `bson:"fmSampleCount"`
 	UpdatedAt      float64            `bson:"updatedAt"`
+}
+
+type EtaPlatformDefaults struct {
+	ID 				primitive.ObjectID  `bson:"_id,omitempty"`
+	CityID 			string 				`bson:"cityId"`
+	RatSeconds      float64             `bson:"ratSeconds,omitempty"`
+	KptSeconds      float64             `bson:"kptSeconds,omitempty"`
+	PickupSeconds   float64             `bson:"pickupSeconds,omitempty"`
+	CatSeconds      float64           	`bson:"catSeconds,omitempty"`
+	FmSeconds       float64           	`bson:"fmSeconds,omitempty"`
+	UpdatedAt       float64            	`bson:"updatedAt"`
 }

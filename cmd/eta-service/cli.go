@@ -39,20 +39,6 @@ func startCommand() *cobra.Command {
 			serverDependecies , _ := InitDependencies()
 
 			serverDependecies.server.Run(serverDependecies.handlers)
-
-
-			// TODO : dependency injection using wire
-			// repo := repository.NewRepository()
-			// service := service.NewService(repo)
-			// handler := etaservice.NewHandler(service)
-
-			// handlers := server.Handlers {
-			// 	ETAHandler: handler,
-			// }
-
-			// srv := server.NewServer(cfg)
-
-			// srv.Run(handlers)
 		},
 	}
 }

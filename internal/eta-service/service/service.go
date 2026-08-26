@@ -12,7 +12,6 @@ import (
 )
 
 type Service interface {
-	GetETA(restaurant_id string, lat, lng float64) (*types.GetETAResponse, error)
 	InsertETA(insertEtaRequest *types.InsertETARequest) error
 	
 	FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error)
@@ -30,11 +29,6 @@ func NewService(repository repository.Repository, commonUtils common.CommonUtils
 		commonUtils: commonUtils,
 		routingClient: routingClient,
 	}
-}
-
-func (s *serviceImpl) GetETA(restaurant_id string, lat, lng float64) (*types.GetETAResponse, error) {
-	// Logic of time to calculate day_of_week and time_slot based on the request time
-	return s.repository.GetETA(restaurant_id, "monday", "lunch", lat, lng)
 }
 
 func (s *serviceImpl) InsertETA(insertEtaRequest *types.InsertETARequest) error {
@@ -121,7 +115,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
 
-		etaInSeconds := *restaurantEstimates.RatSeconds + max(*restaurantEstimates.KptSeconds, *sublocalityEstimates.CatSeconds + *sublocalityEstimates.FmSeconds + *restaurantEstimates.PickupSeconds) + float64(lastMile)
+		etaInSeconds := restaurantEstimates.RatSeconds + max(restaurantEstimates.KptSeconds, sublocalityEstimates.CatSeconds + sublocalityEstimates.FmSeconds + restaurantEstimates.PickupSeconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
 			RestaurantID: restaurantEstimates.RestaurantID,
