@@ -1,6 +1,6 @@
 module github.com/nutanalabs/eta-service
 
-go 1.26.5
+go 1.25.0
 
 require (
 	github.com/gin-gonic/gin v1.12.0
@@ -8,6 +8,8 @@ require (
 	github.com/nutanalabs/rapido-http-go/v3 v3.3.0
 	github.com/nutanalabs/rapido-logger-go v1.1.0
 	github.com/nutanalabs/rapido-mongo-go v1.2.1
+	github.com/nutanalabs/rapido-redis-go v1.4.1
+	github.com/redis/go-redis/v9 v9.22.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	go.mongodb.org/mongo-driver v1.16.0
@@ -42,7 +44,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nutanalabs/rapido-redis-go v1.4.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.21.1 // indirect
@@ -51,7 +52,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.59.0 // indirect
-	github.com/redis/go-redis/v9 v9.22.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sony/gobreaker v1.0.0 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect

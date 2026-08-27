@@ -16,6 +16,6 @@ func (h *Handler) InitRoutes(router *gin.Engine) {
 	router.PATCH("/api/v1/eta/sublocality/:sublocalityId", h.UpdateSublocalityEstimates)
 
 	// Delete
-	// router.DELETE("/api/v1/eta/restaurant/:restaurantId", h.deleteRestaurantEstimates)
-	// router.DELETE("/api/v1/eta/sublocality/:sublocalityId", h.deleteSublocalityEstimates)
+	// router.DELETE("/api/v1/eta/restaurant/:restaurantId", h.DeleteRestaurantEstimates)
+	// router.DELETE("/api/v1/eta/sublocality/:sublocalityId", h.DeleteSublocalityEstimates)
 }
