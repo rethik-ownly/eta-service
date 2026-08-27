@@ -26,28 +26,7 @@ func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils, validato
 	}
 }
 
-
-func (h *Handler) InsertETA(ctx *gin.Context) {
-	var insertEtaRequest types.InsertETARequest
-
-	if err := ctx.ShouldBindJSON(&insertEtaRequest); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error" : "Invalid Body"})
-		return
-	}
-
-	err := h.service.InsertETA(&insertEtaRequest)
-
-	if err != nil {
-		fmt.Println(err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error" : "Failed to insert ETA"})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, "Eta inserted")
-}
-
 func (h *Handler) FetchEta(ctx *gin.Context) {
-	fmt.Println("In controller")
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 
@@ -100,4 +79,116 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
+	method := ctx.Request.Method
+	route := ctx.FullPath()
+	var restaurantEstimates types.InsertRestaurantEstimateRequest
+	
+	if err := ctx.ShouldBindJSON(&restaurantEstimates); err != nil {
+		logger.Error(logger.Format{
+			Event:   "BIND_INSERT_RESTAURANT_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error binding request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	if err := h.validator.ValidateInsertRestaurantEstimateRequest(&restaurantEstimates) ; err != nil {
+		logger.Error(logger.Format{
+			Event: "VALIDATE_INSERT_RESTAURANT_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error validating request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	err := h.service.InsertRestaurantEstimates(&restaurantEstimates)
+
+	if err != nil {
+		logger.Error(logger.Format{
+			Event:   "INSERT_RESTAURANT_ESTIMATE_SERVICE_ERROR",
+			Message: "failed to fetch eta",
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		// TOdo : Resolve Error
+		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"status": "success",
+		"message": "restaurant estimates inserted",
+	})
+}
+
+func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
+	method := ctx.Request.Method
+	route := ctx.FullPath()
+	var sublocalityEstimates types.InsertSublocalityEstimateRequest
+	
+	if err := ctx.ShouldBindJSON(&sublocalityEstimates); err != nil {
+		logger.Error(logger.Format{
+			Event:   "BIND_INSERT_SUBLOCALITY_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error binding request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	if err := h.validator.ValidateInsertSublocalityEstimateRequest(&sublocalityEstimates) ; err != nil {
+		logger.Error(logger.Format{
+			Event: "VALIDATE_INSERT_SUBLOCALITY_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error validating request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	err := h.service.InsertSublocalityEstimates(&sublocalityEstimates)
+
+	if err != nil {
+		logger.Error(logger.Format{
+			Event:   "INSERT_SUBLOCALITY_ESTIMATE_SERVICE_ERROR",
+			Message: "failed to fetch eta",
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		// TOdo : Resolve Error
+		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"status": "success",
+		"message": "sublocality estimates inserted",
+	})
 }

@@ -14,9 +14,9 @@ import (
 )
 
 type Service interface {
-	InsertETA(insertEtaRequest *types.InsertETARequest) error
-	
 	FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error)
+	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
+	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error
 }
 
 type serviceImpl struct {
@@ -38,12 +38,7 @@ func NewService(repository repository.Repository,
 	}
 }
 
-func (s *serviceImpl) InsertETA(insertEtaRequest *types.InsertETARequest) error {
-	return s.repository.InsertETA(insertEtaRequest)
-}
-
 func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error) {
-	fmt.Println("In service")
 	// Time , day , mealtype
 	now := time.Now()
 	day := s.commonUtils.GetDayFromTime(now)
@@ -143,6 +138,19 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	return response, nil
 }
+
+func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error {
+	request.UpdatedAt = float64(time.Now().Unix())
+	return s.repository.InsertRestaurantEstimates(request)
+}
+
+func (s *serviceImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
+	request.UpdatedAt = float64(time.Now().Unix())
+	return s.repository.InsertSublocalityEstimates(request)
+}
+
+
+// Helpers
 
 func getUniqueSublocalitiesId(restaurantsEstimates []types.EtaRestaurantEstimates) []string {
 	uniqueSublocalitiesId := make(map[string]struct{})

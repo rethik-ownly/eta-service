@@ -28,17 +28,6 @@ type FetchEtaRequest struct {
 	Entities     []FetchEtaRequestEntity `json:"entities" bson:"entities"`
 }
 
-type InsertETARequest struct {
-	RestaurantID string  `json:"restaurantId" bson:"restaurantId"`
-	DayOfWeek    string  `json:"dayOfWeek" bson:"dayOfWeek"`
-	TimeSlot     string  `json:"timeSlot" bson:"timeSlot"`
-	Lat          float64 `json:"lat" bson:"lat"`
-	Lng        float64 `json:"lng" bson:"lng"`
-	Eta          uint    `json:"eta" bson:"eta"`
-	CreatedAt    float64 `json:"createdAt" bson:"createdAt"`
-	UpdatedAt    float64 `json:"updatedAt" bson:"updatedAt"`
-}
-
 type FetchEtaResponse struct {
 	RestaurantID string `json:"restaurantId"`
 	EtaInSeconds uint   `json:"etaInSeconds"`
@@ -47,33 +36,34 @@ type FetchEtaResponse struct {
 }
 
 type EtaRestaurantEstimates struct {
-	ID                primitive.ObjectID `bson:"_id,omitempty"`
-	RestaurantID      string             `bson:"restaurantId"`
-	RatSeconds        float64           `bson:"ratSeconds,omitempty"`
-	RatSampleCount    int               `bson:"ratSampleCount,omitempty"`
-	KptSeconds        float64           `bson:"kptSeconds,omitempty"`
-	KptSampleCount    int               `bson:"kptSampleCount,omitempty"`
-	PickupSeconds     float64           `bson:"pickupSeconds,omitempty"`
-	PickupSampleCount int               `bson:"pickupSampleCount,omitempty"`
-	MealType          constants.MealType `bson:"mealType"`
-	Day               constants.Day      `bson:"day"`
-	CityID            string             `bson:"cityId"`
-	ZoneID            string             `bson:"zoneId"`
-	SublocalityID     string             `bson:"sublocalityId"`
+	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	RestaurantID      string             `bson:"restaurantId" json:"restaurantId"`
+	RatSeconds        float64            `bson:"ratSeconds,omitempty" json:"ratSeconds,omitempty"`
+	RatSampleCount    int                `bson:"ratSampleCount,omitempty" json:"ratSampleCount,omitempty"`
+	KptSeconds        float64            `bson:"kptSeconds,omitempty" json:"kptSeconds,omitempty"`
+	KptSampleCount    int                `bson:"kptSampleCount,omitempty" json:"kptSampleCount,omitempty"`
+	PickupSeconds     float64            `bson:"pickupSeconds,omitempty" json:"pickupSeconds,omitempty"`
+	PickupSampleCount int                `bson:"pickupSampleCount,omitempty" json:"pickupSampleCount,omitempty"`
+	MealType          constants.MealType `bson:"mealType" json:"mealType"`
+	Day               constants.Day      `bson:"day" json:"day"`
+	CityID            string             `bson:"cityId" json:"cityId"`
+	ZoneID            string             `bson:"zoneId" json:"zoneId"`
+	SublocalityID     string             `bson:"sublocalityId" json:"sublocalityId"`
+	UpdatedAt         float64            `bson:"updatedAt" json:"updatedAt,omitempty"`
 }
 
 type EtaSublocalityEstimates struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty"`
-	SublocalityID  string             `bson:"sublocalityId"`
-	ZoneID         string             `bson:"zoneId,omitempty"`
-	CityID         string             `bson:"cityId"`
-	MealType       constants.MealType `bson:"mealType"`
-	Day            constants.Day      `bson:"day"`
-	CatSeconds     float64           `bson:"catSeconds,omitempty"`
-	CatSampleCount int               `bson:"catSampleCount,omitempty"`
-	FmSeconds      float64           `bson:"fmSeconds,omitempty"`
-	FmSampleCount  int               `bson:"fmSampleCount"`
-	UpdatedAt      float64            `bson:"updatedAt"`
+	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	SublocalityID  string             `bson:"sublocalityId" json:"sublocalityId"`
+	ZoneID         string             `bson:"zoneId,omitempty" json:"zoneId,omitempty"`
+	CityID         string             `bson:"cityId" json:"cityId"`
+	MealType       constants.MealType `bson:"mealType" json:"mealType"`
+	Day            constants.Day      `bson:"day" json:"day"`
+	CatSeconds     float64            `bson:"catSeconds,omitempty" json:"catSeconds,omitempty"`
+	CatSampleCount int                `bson:"catSampleCount,omitempty" json:"catSampleCount,omitempty"`
+	FmSeconds      float64            `bson:"fmSeconds,omitempty" json:"fmSeconds,omitempty"`
+	FmSampleCount  int                `bson:"fmSampleCount" json:"fmSampleCount"`
+	UpdatedAt      float64            `bson:"updatedAt" json:"updatedAt"`
 }
 
 type EtaPlatformDefaults struct {
@@ -85,4 +75,33 @@ type EtaPlatformDefaults struct {
 	CatSeconds      float64           	`bson:"catSeconds,omitempty"`
 	FmSeconds       float64           	`bson:"fmSeconds,omitempty"`
 	UpdatedAt       float64            	`bson:"updatedAt"`
+}
+
+type InsertRestaurantEstimateRequest struct {
+	RestaurantID      string             `bson:"restaurantId" json:"restaurantId"`
+	RatSeconds        float64            `bson:"ratSeconds,omitempty" json:"ratSeconds,omitempty"`
+	RatSampleCount    int                `bson:"ratSampleCount,omitempty" json:"ratSampleCount,omitempty"`
+	KptSeconds        float64            `bson:"kptSeconds,omitempty" json:"kptSeconds,omitempty"`
+	KptSampleCount    int                `bson:"kptSampleCount,omitempty" json:"kptSampleCount,omitempty"`
+	PickupSeconds     float64            `bson:"pickupSeconds,omitempty" json:"pickupSeconds,omitempty"`
+	PickupSampleCount int                `bson:"pickupSampleCount,omitempty" json:"pickupSampleCount,omitempty"`
+	MealType          constants.MealType `bson:"mealType" json:"mealType"`
+	Day               constants.Day      `bson:"day" json:"day"`
+	CityID            string             `bson:"cityId" json:"cityId"`
+	ZoneID            string             `bson:"zoneId" json:"zoneId"`
+	SublocalityID     string             `bson:"sublocalityId" json:"sublocalityId"`
+	UpdatedAt         float64            `bson:"updatedAt" json:"-"`
+}
+
+type InsertSublocalityEstimateRequest struct {
+	SublocalityID  string             `bson:"sublocalityId" json:"sublocalityId"`
+	ZoneID         string             `bson:"zoneId,omitempty" json:"zoneId,omitempty"`
+	CityID         string             `bson:"cityId" json:"cityId"`
+	MealType       constants.MealType `bson:"mealType" json:"mealType"`
+	Day            constants.Day      `bson:"day" json:"day"`
+	CatSeconds     float64            `bson:"catSeconds,omitempty" json:"catSeconds,omitempty"`
+	CatSampleCount int                `bson:"catSampleCount,omitempty" json:"catSampleCount,omitempty"`
+	FmSeconds      float64            `bson:"fmSeconds,omitempty" json:"fmSeconds,omitempty"`
+	FmSampleCount  int                `bson:"fmSampleCount" json:"fmSampleCount"`
+	UpdatedAt      float64            `bson:"updatedAt" json:"-"`
 }

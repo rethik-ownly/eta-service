@@ -9,12 +9,14 @@ import (
 )
 
 type Repository interface {
-	InsertETA(insertEtaRequest *types.InsertETARequest) error
 
 	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
 	FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
 	FetchRestaurantEstimatesByIDs(restaurantsID []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error)
 	FetchSublocalityEstimatesByIDs(sublocalitiesID []string, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error)
+
+	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
+	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error 
 }
 
 type repositoryImpl struct {
@@ -25,13 +27,6 @@ func NewRepository(mongoRepository mongo.Repository) Repository {
 	return &repositoryImpl{
 		mongoRepository: mongoRepository,
 	}
-}
-
-
-func (r *repositoryImpl) InsertETA(insertEtaRequest *types.InsertETARequest) error {
-	_ , err := r.mongoRepository.InsertOne(constants.ETA_RESTAURANT_ESTIMATES, insertEtaRequest)
-
-	return err
 }
 
 func (r *repositoryImpl) FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error) {
@@ -121,6 +116,18 @@ func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId []string
 	return []types.EtaSublocalityEstimates{}, nil
 }
 
-func (r *repositoryImpl) FetchPlatformDefaults() {
-	
+func (r *repositoryImpl) InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error {
+	_, err := r.mongoRepository.InsertOne(constants.ETA_RESTAURANT_ESTIMATES, request)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repositoryImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
+	_, err := r.mongoRepository.InsertOne(constants.ETA_SUBLOCALITY_ESTIMATES, request)
+	if err != nil {
+		return err
+	}
+	return nil
 }
