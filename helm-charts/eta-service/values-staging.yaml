@@ -1,0 +1,43 @@
+canary:
+  analysis:
+    interval: ''
+    maxWeight: 0
+    stepWeight: 0
+  enabled: false
+  metrics:
+    thresholds:
+      latency: 0
+      successRate: 0
+  skipAnalysis: false
+
+environment: staging
+
+hpa:
+  enabled: true
+  maxReplicas: 2
+  metrics:
+    cpu:
+      enabled: true
+      targetAverageUtilization: 75
+    memory:
+      enabled: true
+      targetAverageUtilization: 75
+  minReplicas: 1
+
+preemptible_workload: false
+
+replicaCount: 1
+
+resources:
+  enabled: true
+  limits:
+    cpu: 500m
+    memory: 500Mi
+  requests:
+    cpu: 200m
+    memory: 150Mi
+
+metrics:
+  enabled: true
+
+team: application-platform
