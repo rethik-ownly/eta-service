@@ -10,4 +10,12 @@ func (h *Handler) InitRoutes(router *gin.Engine) {
 	// Insert
 	router.POST("/api/v1/eta/restaurant", h.InsertRestaurantEstimates)
 	router.POST("/api/v1/eta/sublocality", h.InsertSublocalityEstimates)
+
+	// Update
+	router.PATCH("/api/v1/eta/restaurant/:restaurantId", h.UpdateRestaurantEstimates)
+	router.PATCH("/api/v1/eta/sublocality/:sublocalityId", h.UpdateSublocalityEstimates)
+
+	// Delete
+	// router.DELETE("/api/v1/eta/restaurant/:restaurantId", h.deleteRestaurantEstimates)
+	// router.DELETE("/api/v1/eta/sublocality/:sublocalityId", h.deleteSublocalityEstimates)
 }

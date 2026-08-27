@@ -20,6 +20,9 @@ type Repository interface {
 
 	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
 	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error 
+
+	UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error
+	UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error
 }
 
 type repositoryImpl struct {
@@ -149,6 +152,87 @@ func (r *repositoryImpl) InsertRestaurantEstimates(request *types.InsertRestaura
 
 func (r *repositoryImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
 	_, err := r.mongoRepository.InsertOne(constants.ETA_SUBLOCALITY_ESTIMATES, request)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repositoryImpl) UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error {
+	filter := bson.M{
+		"restaurantId": restaurantId,
+		"day":          request.Day,
+		"mealType":     request.MealType,
+	}
+
+	set := bson.M{
+		"updatedAt": request.UpdatedAt,
+	}
+	if request.RatSeconds != nil {
+		set["ratSeconds"] = *request.RatSeconds
+	}
+	if request.RatSampleCount != nil {
+		set["ratSampleCount"] = *request.RatSampleCount
+	}
+	if request.KptSeconds != nil {
+		set["kptSeconds"] = *request.KptSeconds
+	}
+	if request.KptSampleCount != nil {
+		set["kptSampleCount"] = *request.KptSampleCount
+	}
+	if request.PickupSeconds != nil {
+		set["pickupSeconds"] = *request.PickupSeconds
+	}
+	if request.PickupSampleCount != nil {
+		set["pickupSampleCount"] = *request.PickupSampleCount
+	}
+	if request.CityID != nil {
+		set["cityId"] = *request.CityID
+	}
+	if request.ZoneID != nil {
+		set["zoneId"] = *request.ZoneID
+	}
+	if request.SublocalityID != nil {
+		set["sublocalityId"] = *request.SublocalityID
+	}
+
+	_, err := r.mongoRepository.UpdateOne(constants.ETA_RESTAURANT_ESTIMATES, filter, bson.M{"$set": set}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repositoryImpl) UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error {
+	filter := bson.M{
+		"sublocalityId": sublocalityId,
+		"day":           request.Day,
+		"mealType":      request.MealType,
+	}
+
+	set := bson.M{
+		"updatedAt": request.UpdatedAt,
+	}
+	if request.ZoneID != nil {
+		set["zoneId"] = *request.ZoneID
+	}
+	if request.CityID != nil {
+		set["cityId"] = *request.CityID
+	}
+	if request.CatSeconds != nil {
+		set["catSeconds"] = *request.CatSeconds
+	}
+	if request.CatSampleCount != nil {
+		set["catSampleCount"] = *request.CatSampleCount
+	}
+	if request.FmSeconds != nil {
+		set["fmSeconds"] = *request.FmSeconds
+	}
+	if request.FmSampleCount != nil {
+		set["fmSampleCount"] = *request.FmSampleCount
+	}
+
+	_, err := r.mongoRepository.UpdateOne(constants.ETA_SUBLOCALITY_ESTIMATES, filter, bson.M{"$set": set}, nil)
 	if err != nil {
 		return err
 	}

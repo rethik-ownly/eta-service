@@ -16,6 +16,9 @@ type Service interface {
 	FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error)
 	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
 	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error
+
+	UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error
+	UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error
 }
 
 type serviceImpl struct {
@@ -128,6 +131,16 @@ func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantE
 func (s *serviceImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
 	request.UpdatedAt = float64(time.Now().Unix())
 	return s.repository.InsertSublocalityEstimates(request)
+}
+
+func (s *serviceImpl) UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error {
+	request.UpdatedAt = float64(time.Now().Unix())
+	return s.repository.UpdateRestaurantEstimates(restaurantId, request)
+}
+
+func (s *serviceImpl) UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error {
+	request.UpdatedAt = float64(time.Now().Unix())
+	return s.repository.UpdateSublocalityEstimates(sublocalityId, request)
 }
 
 

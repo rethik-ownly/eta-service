@@ -192,3 +192,117 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 		"message": "sublocality estimates inserted",
 	})
 }
+
+func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
+	method := ctx.Request.Method
+	route := ctx.FullPath()
+	restaurantId := ctx.Param("restaurantId")
+
+	var restaurantEstimates types.UpdateRestaurantEstimateRequest
+	if err := ctx.ShouldBindJSON(&restaurantEstimates); err != nil {
+		logger.Error(logger.Format{
+			Event:   "BIND_UPDATE_RESTAURANT_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error binding request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	if err := h.validator.ValidateUpdateRestaurantEstimates(restaurantId, &restaurantEstimates); err != nil {
+		logger.Error(logger.Format{
+			Event:   "VALIDATE_UPDATE_RESTAURANT_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error validating request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	err := h.service.UpdateRestaurantEstimates(restaurantId, &restaurantEstimates)
+
+	if err != nil {
+		logger.Error(logger.Format{
+			Event:   "UPDATE_RESTAURANT_ESTIMATE_SERVICE_ERROR",
+			Message: "failed to update restaurant estimates",
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		// TOdo : Resolve Error
+		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "restaurant estimates updated",
+	})
+}
+
+func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
+	method := ctx.Request.Method
+	route := ctx.FullPath()
+	sublocalityId := ctx.Param("sublocalityId")
+
+	var sublocalityEstimates types.UpdateSublocalityEstimateRequest
+	if err := ctx.ShouldBindJSON(&sublocalityEstimates); err != nil {
+		logger.Error(logger.Format{
+			Event:   "BIND_UPDATE_SUBLOCALITY_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error binding request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	if err := h.validator.ValidateUpdateSublocalityEstimates(sublocalityId, &sublocalityEstimates); err != nil {
+		logger.Error(logger.Format{
+			Event:   "VALIDATE_UPDATE_SUBLOCALITY_ESTIMATE_REQUEST",
+			Message: fmt.Sprintf("error validating request with err: %v", err),
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
+		return
+	}
+
+	err := h.service.UpdateSublocalityEstimates(sublocalityId, &sublocalityEstimates)
+
+	if err != nil {
+		logger.Error(logger.Format{
+			Event:   "UPDATE_SUBLOCALITY_ESTIMATE_SERVICE_ERROR",
+			Message: "failed to update sublocality estimates",
+			Data: map[string]string{
+				"error":  err.Error(),
+				"method": method,
+				"route":  route,
+			},
+		})
+		// TOdo : Resolve Error
+		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "sublocality estimates updated",
+	})
+}

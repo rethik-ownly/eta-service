@@ -105,3 +105,42 @@ type InsertSublocalityEstimateRequest struct {
 	FmSampleCount  int                `bson:"fmSampleCount" json:"fmSampleCount"`
 	UpdatedAt      float64            `bson:"updatedAt" json:"-"`
 }
+
+// RestaurantID is not bound from the request body; it is taken from the
+// ":restaurantId" path param and set by the handler before validation.
+type UpdateRestaurantEstimateRequest struct {
+	RestaurantID string `json:"-" bson:"restaurantId"`
+
+	Day      constants.Day      `json:"day" bson:"day" binding:"required"`
+	MealType constants.MealType `json:"mealType" bson:"mealType" binding:"required"`
+
+	RatSeconds        *float64 `json:"ratSeconds,omitempty" bson:"ratSeconds,omitempty"`
+	RatSampleCount    *int     `json:"ratSampleCount,omitempty" bson:"ratSampleCount,omitempty"`
+	KptSeconds        *float64 `json:"kptSeconds,omitempty" bson:"kptSeconds,omitempty"`
+	KptSampleCount    *int     `json:"kptSampleCount,omitempty" bson:"kptSampleCount,omitempty"`
+	PickupSeconds     *float64 `json:"pickupSeconds,omitempty" bson:"pickupSeconds,omitempty"`
+	PickupSampleCount *int     `json:"pickupSampleCount,omitempty" bson:"pickupSampleCount,omitempty"`
+	CityID            *string  `json:"cityId,omitempty" bson:"cityId,omitempty"`
+	ZoneID            *string  `json:"zoneId,omitempty" bson:"zoneId,omitempty"`
+	SublocalityID     *string  `json:"sublocalityId,omitempty" bson:"sublocalityId,omitempty"`
+
+	UpdatedAt float64 `json:"-" bson:"updatedAt"`
+}
+
+// SublocalityID is not bound from the request body; it is taken from the
+// ":sublocalityId" path param and set by the handler before validation.
+type UpdateSublocalityEstimateRequest struct {
+	SublocalityID string `json:"-" bson:"sublocalityId"`
+
+	Day      constants.Day      `json:"day" bson:"day" binding:"required"`
+	MealType constants.MealType `json:"mealType" bson:"mealType" binding:"required"`
+
+	ZoneID         *string  `json:"zoneId,omitempty" bson:"zoneId,omitempty"`
+	CityID         *string  `json:"cityId,omitempty" bson:"cityId,omitempty"`
+	CatSeconds     *float64 `json:"catSeconds,omitempty" bson:"catSeconds,omitempty"`
+	CatSampleCount *int     `json:"catSampleCount,omitempty" bson:"catSampleCount,omitempty"`
+	FmSeconds      *float64 `json:"fmSeconds,omitempty" bson:"fmSeconds,omitempty"`
+	FmSampleCount  *int     `json:"fmSampleCount,omitempty" bson:"fmSampleCount,omitempty"`
+
+	UpdatedAt float64 `json:"-" bson:"updatedAt"`
+}
