@@ -1,0 +1,63 @@
+appName: eta-service
+
+server:
+  host: localhost
+  port: 8082
+
+mongo:
+  hosts: localhost:27017
+  user: ""
+  password: ""
+  database: etaDB
+  authSource: etaDB
+  appName: eta-service
+
+  maxPoolSize: 50
+  maxConnecting: 2
+  minPoolSize: 20
+
+  writeTimeoutInMs: 1000
+  readTimeoutInMs: 1000
+  maxIdleTimeInMs: 10000
+  connectTimeoutInMs: 10000
+
+  replicaSet: ""
+  readPreference: primary
+
+  retryWritesEnabled: false
+  retryReadsEnabled: false
+
+  isHealthCheckEnabled: true
+  monitorMongoDriverEnabled: true
+
+  queryBatchSize: 100
+
+redis:
+  hosts: localhost:6379
+  password: ""
+  connectionTimeoutInMs: 1000
+  queryTimeoutInMs: 1000
+  isHealthCheckEnabled: true
+  isMetricsEnabled: true
+
+log:
+  level: debug
+
+httpTransport:
+  disableMetrics: false
+  maxIdleConnections: 10
+  maxConnectionsPerHost: 5
+  maxIdleConnectionsPerHost: 5
+  insecureSkipVerify: true
+
+externalServices:
+  routingEngine:
+    host: "https://rapido-routing-engine.nginx.svc.staging.internal"
+    port: 443
+    distanceMatrixAPI:
+      path: "/api/v1/routes/distanceMatrix"
+      timeoutInMs: 2000
+      qosLevel: "QOS3"
+  
+eta:
+  maxEntities: 100
