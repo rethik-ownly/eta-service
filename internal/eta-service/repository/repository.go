@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"fmt"
+	"math"
+
 	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/dataclients/mongo"
 	"github.com/nutanalabs/eta-service/internal/types"
@@ -12,8 +15,8 @@ type Repository interface {
 
 	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
 	FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
-	FetchRestaurantEstimatesByIDs(restaurantsID []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error)
-	FetchSublocalityEstimatesByIDs(sublocalitiesID []string, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error)
+	FetchRestaurantEstimatesByIDs(restaurantsID []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaRestaurantEstimates, error)
+	FetchSublocalityEstimatesByIDs(sublocalitiesID []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaSublocalityEstimates, error)
 
 	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
 	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error 
@@ -61,7 +64,17 @@ func (r *repositoryImpl) FetchSublocalityEstimates(sublocality_id string, day co
 	return &response, nil
 }
 
-func (r *repositoryImpl) FetchRestaurantEstimatesByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error) {
+func (r *repositoryImpl) FetchRestaurantEstimatesByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaRestaurantEstimates, error) {
+	if batchSize <= 0 {
+		return nil, fmt.Errorf("invalid mongo queryBatchSize: %d", batchSize)
+	}
+
+	return fetchInBatches(restaurantsId, batchSize, func(batch []string) ([]types.EtaRestaurantEstimates, error) {
+		return r.fetchRestaurantEstimatesByIDsBatch(batch, day, mealType)
+	})
+}
+
+func (r *repositoryImpl) fetchRestaurantEstimatesByIDsBatch(restaurantsId []string, day constants.Day, mealType constants.MealType) ([]types.EtaRestaurantEstimates, error) {
 	filter := bson.M{
 		"restaurantId": bson.M{
 			"$in": restaurantsId,
@@ -88,7 +101,17 @@ func (r *repositoryImpl) FetchRestaurantEstimatesByIDs(restaurantsId []string, d
 	return []types.EtaRestaurantEstimates{}, nil
 }
 
-func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error) {
+func (r *repositoryImpl) FetchSublocalityEstimatesByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaSublocalityEstimates, error) {
+	if batchSize <= 0 {
+		return nil, fmt.Errorf("invalid mongo queryBatchSize: %d", batchSize)
+	}
+
+	return fetchInBatches(sublocalitiesId, batchSize, func(batch []string) ([]types.EtaSublocalityEstimates, error) {
+		return r.fetchSublocalityEstimatesByIDsBatch(batch, day, mealType)
+	})
+}
+
+func (r *repositoryImpl) fetchSublocalityEstimatesByIDsBatch(sublocalitiesId []string, day constants.Day, mealType constants.MealType) ([]types.EtaSublocalityEstimates, error) {
 	filter := bson.M{
 		"sublocalityId": bson.M{
 			"$in": sublocalitiesId,
@@ -130,4 +153,38 @@ func (r *repositoryImpl) InsertSublocalityEstimates(request *types.InsertSubloca
 		return err
 	}
 	return nil
+}
+
+// Helpers
+
+func fetchInBatches[T any](
+	ids []string,
+	batchSize int,
+	fetchFn func(batch []string) ([]T, error),
+) ([]T, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	numberOfBatches := int(math.Ceil(float64(len(ids)) / float64(batchSize)))
+
+	result := make([]T, 0, len(ids))
+
+	for i := 0; i < numberOfBatches; i++ {
+		start := i * batchSize
+
+		end := start + batchSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+
+		batchResult, err := fetchFn(ids[start:end])
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, batchResult...)
+	}
+
+	return result, nil
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/nutanalabs/eta-service/internal/config"
@@ -52,14 +51,9 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	}
 
 	batchSize := s.config.Mongo.QueryBatchSize
-	if batchSize <= 0 {
-		return nil, fmt.Errorf("invalid mongo queryBatchSize: %d", batchSize)
-	}
 
 	// Fetching restaurant_Estimates By ID's
-	restaurantsEstimates, err := fetchInBatches(restaurantsID, batchSize, func(batch []string) ([]types.EtaRestaurantEstimates, error) {
-		return s.repository.FetchRestaurantEstimatesByIDs(batch, day, mealType)
-	})
+	restaurantsEstimates, err := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
 
 	if err != nil {
 		return nil, fmt.Errorf("Fetching restaurant estimates failed : %w", err)
@@ -73,9 +67,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	// Fetching sublocality_estimates by ID's
 	uniqueSublocalitesID := getUniqueSublocalitiesId(restaurantsEstimates)
 
-	sublocalitiesEstimates, err := fetchInBatches(uniqueSublocalitesID, batchSize, func(batch []string) ([]types.EtaSublocalityEstimates, error){
-		return s.repository.FetchSublocalityEstimatesByIDs(batch, day, mealType)
-	})
+	sublocalitiesEstimates, err := s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
 
 	if err != nil {
 		return nil, fmt.Errorf("Fetching sublocality estimates failed : %w", err)
@@ -96,21 +88,10 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 		RoutingPreference: constants.ROUTING_PREFERENCE_TRAFFIC_AWARE,
 	}
 
-	var distanceMatrixResponse *routingengine.DistanceMatrixResponse
-
-	qosLevel := request.Options.QosLevel
-	if(qosLevel != "") {
-		distanceMatrixResponse, err =  s.routingClient.GetDistanceMatrixWithQoS(&distanceMatrixRequest, qosLevel)
-	}else {
-		distanceMatrixResponse, err = s.routingClient.GetDistanceMatrix(&distanceMatrixRequest)
-	}
+	distanceMatrixResponse, err := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
 
 	if err != nil {
-		return nil, fmt.Errorf("distance matrix API call failed: %w", err)
-	}
-	
-	if len(distanceMatrixResponse.Data) == 0 || len(distanceMatrixResponse.Data) != len(sources) {
-		return nil, fmt.Errorf("invalid response from distance matrix API: expected %d sources, got %d", len(sources), len(distanceMatrixResponse.Data))
+		return nil, err
 	}
 
 	var response []types.FetchEtaResponse
@@ -171,34 +152,21 @@ func getUniqueSublocalitiesId(restaurantsEstimates []types.EtaRestaurantEstimate
 	return result
 }
 
-func fetchInBatches[T any](
-	ids[] string,
-	batchSize int,
-	fetchFn func(batch []string) ([]T, error),
-) ([]T, error){
-	if len(ids) == 0 {
-		return nil, nil
+func (s *serviceImpl) getDistanceMatrix(qosLevel constants.QosLevel, distanceMatrixRequest *routingengine.DistanceMatrixRequest) (*routingengine.DistanceMatrixResponse, error) {
+	var distanceMatrixResponse *routingengine.DistanceMatrixResponse
+	var err error
+	if(qosLevel != "") {
+		distanceMatrixResponse, err =  s.routingClient.GetDistanceMatrixWithQoS(distanceMatrixRequest, qosLevel)
+	}else {
+		distanceMatrixResponse, err = s.routingClient.GetDistanceMatrix(distanceMatrixRequest)
 	}
 
-	numberOfBatches := int(math.Ceil(float64(len(ids)) / float64(batchSize)))
-
-	result := make([]T, 0, len(ids))
-
-	for i := 0; i < numberOfBatches; i++ {
-		start := i * batchSize
-
-		end := start + batchSize
-		if end > len(ids) {
-			end = len(ids)
-		}
-
-		batchResult , err := fetchFn(ids[start:end])
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, batchResult...)
+	if err != nil {
+		return nil, fmt.Errorf("distance matrix API call failed: %w", err)
 	}
-
-	return result, nil
+	
+	if len(distanceMatrixResponse.Data) == 0 || len(distanceMatrixResponse.Data) != len(distanceMatrixRequest.Sources) {
+		return nil, fmt.Errorf("invalid response from distance matrix API: expected %d sources, got %d", len(distanceMatrixRequest.Sources), len(distanceMatrixResponse.Data))
+	}
+	return distanceMatrixResponse, nil
 }
