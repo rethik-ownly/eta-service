@@ -6,7 +6,9 @@ import (
 )
 
 type ErrorResponse struct {
-	Error HTTPStatusError `json:"error,omitempty"`
+	Success bool             `json:"success"`
+	Data    interface{}      `json:"data"`
+	Error   *HTTPStatusError `json:"error"`
 }
 
 type HTTPStatusError struct {
@@ -33,4 +35,21 @@ func NewBadRequestError(displayMessage string) *HTTPStatusError {
 		DisplayMessage: displayMessage,
 		Code: strconv.Itoa(http.StatusBadRequest),
 	}
+}
+
+func NewConflictError(displayMessage string) *HTTPStatusError {
+	return &HTTPStatusError{
+		Message: "conflict",
+		DisplayMessage: displayMessage,
+		Code: strconv.Itoa(http.StatusConflict),
+	}
+}
+
+// StatusCode returns the numeric HTTP status code for this error, defaulting
+// to 500 if Code is missing or unparsable.
+func (e *HTTPStatusError) StatusCode() int {
+	if code, err := strconv.Atoi(e.Code); err == nil {
+		return code
+	}
+	return http.StatusInternalServerError
 }

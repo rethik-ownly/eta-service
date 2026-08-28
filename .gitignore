@@ -8,3 +8,5 @@ eta-service-request
 .cursor/plans
 
 seed.js
+
+out/

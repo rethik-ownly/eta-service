@@ -124,11 +124,27 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 }
 
 func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error {
+	exists, err := s.repository.RestaurantEstimateExists(request.RestaurantID, request.Day, request.MealType)
+	if err != nil {
+		return fmt.Errorf("checking existing restaurant estimate failed: %w", err)
+	}
+	if exists {
+		return types.NewConflictError(fmt.Sprintf("restaurant estimate already exists for restaurantId=%s day=%s mealType=%s", request.RestaurantID, request.Day, request.MealType))
+	}
+
 	request.UpdatedAt = float64(time.Now().Unix())
 	return s.repository.InsertRestaurantEstimates(request)
 }
 
 func (s *serviceImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
+	exists, err := s.repository.SublocalityEstimateExists(request.SublocalityID, request.Day, request.MealType)
+	if err != nil {
+		return fmt.Errorf("checking existing sublocality estimate failed: %w", err)
+	}
+	if exists {
+		return types.NewConflictError(fmt.Sprintf("sublocality estimate already exists for sublocalityId=%s day=%s mealType=%s", request.SublocalityID, request.Day, request.MealType))
+	}
+
 	request.UpdatedAt = float64(time.Now().Unix())
 	return s.repository.InsertSublocalityEstimates(request)
 }

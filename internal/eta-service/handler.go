@@ -1,6 +1,7 @@
 package etaservice
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -78,7 +79,7 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, resp)
+	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(resp))
 }
 
 func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
@@ -119,22 +120,21 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 	if err != nil {
 		logger.Error(logger.Format{
 			Event:   "INSERT_RESTAURANT_ESTIMATE_SERVICE_ERROR",
-			Message: "failed to fetch eta",
+			Message: "failed to insert restaurant estimates",
 			Data: map[string]string{
 				"error":  err.Error(),
 				"method": method,
 				"route":  route,
 			},
 		})
-		// TOdo : Resolve Error
-		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		statusErr := toHTTPStatusError(err)
+		ctx.JSON(statusErr.StatusCode(), h.httpUtils.BuildErrorResponse(statusErr))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"status": "success",
+	ctx.JSON(http.StatusCreated, h.httpUtils.BuildSuccessResponse(gin.H{
 		"message": "restaurant estimates inserted",
-	})
+	}))
 }
 
 func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
@@ -175,22 +175,21 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 	if err != nil {
 		logger.Error(logger.Format{
 			Event:   "INSERT_SUBLOCALITY_ESTIMATE_SERVICE_ERROR",
-			Message: "failed to fetch eta",
+			Message: "failed to insert sublocality estimates",
 			Data: map[string]string{
 				"error":  err.Error(),
 				"method": method,
 				"route":  route,
 			},
 		})
-		// TOdo : Resolve Error
-		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		statusErr := toHTTPStatusError(err)
+		ctx.JSON(statusErr.StatusCode(), h.httpUtils.BuildErrorResponse(statusErr))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"status": "success",
+	ctx.JSON(http.StatusCreated, h.httpUtils.BuildSuccessResponse(gin.H{
 		"message": "sublocality estimates inserted",
-	})
+	}))
 }
 
 func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
@@ -244,10 +243,9 @@ func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":  "success",
+	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(gin.H{
 		"message": "restaurant estimates updated",
-	})
+	}))
 }
 
 func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
@@ -301,8 +299,18 @@ func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":  "success",
+	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(gin.H{
 		"message": "sublocality estimates updated",
-	})
+	}))
+}
+
+// toHTTPStatusError preserves the intended status code (e.g. conflict, bad
+// request) when the service layer already returned a *types.HTTPStatusError,
+// falling back to a generic internal server error otherwise.
+func toHTTPStatusError(err error) *types.HTTPStatusError {
+	var statusErr *types.HTTPStatusError
+	if errors.As(err, &statusErr) {
+		return statusErr
+	}
+	return types.NewInternalServerError(err.Error())
 }
