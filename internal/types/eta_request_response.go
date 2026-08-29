@@ -9,7 +9,6 @@ type Location struct {
 	Lng float64 `json:"lng"`
 }
 
-
 // Fetch Eta Reques-Response
 type FetchEtaRequestOptions struct {
 	QosLevel constants.QosLevel `json:"qosLevel"`
@@ -23,8 +22,8 @@ type FetchEtaRequestEntity struct {
 type FetchEtaRequest struct {
 	Surface      constants.Surface       `json:"surface"`
 	DeliveryType constants.DeliveryType  `json:"deliveryType"`
-	UserID       string                  `json:"userId"`
-	UserLocation Location                `json:"userLocation"`
+	UserID       string                  `json:"userId" binding:"required"`
+	UserLocation Location                `json:"userLocation" binding:"required"`
 	Options      FetchEtaRequestOptions  `json:"options"`
 	Entities     []FetchEtaRequestEntity `json:"entities"`
 }
@@ -36,43 +35,60 @@ type FetchEtaResponse struct {
 	DisplayMax   uint   `json:"displayMax,omitempty"`
 }
 
-// Insert Eta Request 
+// Insert Eta Request
+//
+// Insert creates a brand-new document covering the given set of days
+// (DayType/Day). It fails with a conflict if any of those days already
+// belong to another document for the same id (see service layer).
 type InsertRestaurantEstimateRequest struct {
-	RestaurantID      string             `json:"restaurantId"`
-	RatSeconds        float64            `json:"ratSeconds,omitempty"`
-	RatSampleCount    int                `json:"ratSampleCount,omitempty"`
-	KptSeconds        float64            `json:"kptSeconds,omitempty"`
-	KptSampleCount    int                `json:"kptSampleCount,omitempty"`
-	PickupSeconds     float64            `json:"pickupSeconds,omitempty"`
-	PickupSampleCount int                `json:"pickupSampleCount,omitempty"`
-	MealType          constants.MealType `json:"mealType"`
-	Day               constants.Day      `json:"day"`
-	CityID            string             `json:"cityId"`
-	ZoneID            string             `json:"zoneId"`
-	SublocalityID     string             `json:"sublocalityId"`
-	UpdatedAt         float64            `json:"-"`
+	RestaurantId  string          `json:"restaurantId"`
+	DayType       []constants.Day `json:"dayType"`
+	CityId        string          `json:"cityId"`
+	ZoneId        string          `json:"zoneId"`
+	SublocalityId string          `json:"sublocalityId"`
+
+	Breakfast RestaurantMealEstimate `json:"breakfast,omitempty"`
+	Lunch     RestaurantMealEstimate `json:"lunch,omitempty"`
+	Snacks    RestaurantMealEstimate `json:"snacks,omitempty"`
+	Dinner    RestaurantMealEstimate `json:"dinner,omitempty"`
+	Latenight RestaurantMealEstimate `json:"latenight,omitempty"`
+
+	UpdatedAt float64 `json:"-"`
 }
 
 type InsertSublocalityEstimateRequest struct {
-	SublocalityID  string             `json:"sublocalityId"`
-	ZoneID         string             `json:"zoneId,omitempty"`
-	CityID         string             `json:"cityId"`
-	MealType       constants.MealType `json:"mealType"`
-	Day            constants.Day      `json:"day"`
-	CatSeconds     float64            `json:"catSeconds,omitempty"`
-	CatSampleCount int                `json:"catSampleCount,omitempty"`
-	FmSeconds      float64            `json:"fmSeconds,omitempty"`
-	FmSampleCount  int                `json:"fmSampleCount"`
-	UpdatedAt      float64            `json:"-"`
+	SublocalityId string          `json:"sublocalityId"`
+	Day           []constants.Day `json:"day"`
+	ZoneId        string          `json:"zoneId,omitempty"`
+	CityId        string          `json:"cityId"`
+
+	Breakfast SublocalityMealEstimate `json:"breakfast"`
+	Lunch     SublocalityMealEstimate `json:"lunch"`
+	Snacks    SublocalityMealEstimate `json:"snacks"`
+	Dinner    SublocalityMealEstimate `json:"dinner"`
+	Latenight SublocalityMealEstimate `json:"latenight"`
+
+	UpdatedAt float64 `json:"-"`
 }
 
-// RestaurantID is not bound from the request body; it is taken from the
-// ":restaurantId" path param and set by the handler before validation.
+// RestaurantId is not bound from the request body; it is taken from the
+// ":restaurantId" path param.
+//
+// Day locates the existing document (it must be present in the document's
+// dayType array); Update never creates a document. MealType is only
+// required when patching one of the nested Rat/Kpt/Pickup sections. Days,
+// if provided, replaces the whole dayType array (e.g. to add another day to
+// this same document).
 type UpdateRestaurantEstimateRequest struct {
-	RestaurantID string `json:"-"`
+	RestaurantId string `json:"-"`
 
 	Day      constants.Day      `json:"day" binding:"required"`
-	MealType constants.MealType `json:"mealType" binding:"required"`
+	MealType constants.MealType `json:"mealType,omitempty"`
+
+	Days          *[]constants.Day `json:"days,omitempty"`
+	CityId        *string          `json:"cityId,omitempty"`
+	ZoneId        *string          `json:"zoneId,omitempty"`
+	SublocalityId *string          `json:"sublocalityId,omitempty"`
 
 	RatSeconds        *float64 `json:"ratSeconds,omitempty"`
 	RatSampleCount    *int     `json:"ratSampleCount,omitempty"`
@@ -80,23 +96,28 @@ type UpdateRestaurantEstimateRequest struct {
 	KptSampleCount    *int     `json:"kptSampleCount,omitempty"`
 	PickupSeconds     *float64 `json:"pickupSeconds,omitempty"`
 	PickupSampleCount *int     `json:"pickupSampleCount,omitempty"`
-	CityID            *string  `json:"cityId,omitempty"`
-	ZoneID            *string  `json:"zoneId,omitempty"`
-	SublocalityID     *string  `json:"sublocalityId,omitempty"`
 
 	UpdatedAt float64 `json:"-"`
 }
 
-// SublocalityID is not bound from the request body; it is taken from the
-// ":sublocalityId" path param and set by the handler before validation.
+// SublocalityId is not bound from the request body; it is taken from the
+// ":sublocalityId" path param.
+//
+// Day locates the existing document (it must be present in the document's
+// day array); Update never creates a document. MealType is only required
+// when patching one of the nested Cat/Fm sections. Days, if provided,
+// replaces the whole day array (e.g. to add another day to this same
+// document).
 type UpdateSublocalityEstimateRequest struct {
-	SublocalityID string `json:"-"`
+	SublocalityId string `json:"-"`
 
 	Day      constants.Day      `json:"day" binding:"required"`
-	MealType constants.MealType `json:"mealType" binding:"required"`
+	MealType constants.MealType `json:"mealType,omitempty"`
 
-	ZoneID         *string  `json:"zoneId,omitempty"`
-	CityID         *string  `json:"cityId,omitempty"`
+	Days   *[]constants.Day `json:"days,omitempty"`
+	ZoneId *string          `json:"zoneId,omitempty"`
+	CityId *string          `json:"cityId,omitempty"`
+
 	CatSeconds     *float64 `json:"catSeconds,omitempty"`
 	CatSampleCount *int     `json:"catSampleCount,omitempty"`
 	FmSeconds      *float64 `json:"fmSeconds,omitempty"`

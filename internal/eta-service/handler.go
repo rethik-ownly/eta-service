@@ -1,7 +1,6 @@
 package etaservice
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -127,7 +126,7 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		statusErr := toHTTPStatusError(err)
+		statusErr := types.ToHTTPStatusError(err)
 		ctx.JSON(statusErr.StatusCode(), h.httpUtils.BuildErrorResponse(statusErr))
 		return
 	}
@@ -182,7 +181,7 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		statusErr := toHTTPStatusError(err)
+		statusErr := types.ToHTTPStatusError(err)
 		ctx.JSON(statusErr.StatusCode(), h.httpUtils.BuildErrorResponse(statusErr))
 		return
 	}
@@ -302,15 +301,4 @@ func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(gin.H{
 		"message": "sublocality estimates updated",
 	}))
-}
-
-// toHTTPStatusError preserves the intended status code (e.g. conflict, bad
-// request) when the service layer already returned a *types.HTTPStatusError,
-// falling back to a generic internal server error otherwise.
-func toHTTPStatusError(err error) *types.HTTPStatusError {
-	var statusErr *types.HTTPStatusError
-	if errors.As(err, &statusErr) {
-		return statusErr
-	}
-	return types.NewInternalServerError(err.Error())
 }

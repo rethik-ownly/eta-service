@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 )
@@ -52,4 +53,15 @@ func (e *HTTPStatusError) StatusCode() int {
 		return code
 	}
 	return http.StatusInternalServerError
+}
+
+// ToHTTPStatusError preserves the intended status code (e.g. conflict, bad
+// request) when the given error is already a *HTTPStatusError, falling back
+// to a generic internal server error otherwise.
+func ToHTTPStatusError(err error) *HTTPStatusError {
+	var statusErr *HTTPStatusError
+	if errors.As(err, &statusErr) {
+		return statusErr
+	}
+	return NewInternalServerError(err.Error())
 }

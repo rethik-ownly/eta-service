@@ -22,21 +22,21 @@ type Service interface {
 }
 
 type serviceImpl struct {
-	repository repository.Repository
-	commonUtils common.CommonUtils
+	repository    repository.Repository
+	commonUtils   common.CommonUtils
 	routingClient routingengine.RoutingEngineClient
-	config *config.Config
+	config        *config.Config
 }
 
-func NewService(repository repository.Repository, 
-	commonUtils common.CommonUtils, 
+func NewService(repository repository.Repository,
+	commonUtils common.CommonUtils,
 	routingClient routingengine.RoutingEngineClient,
 	config *config.Config) Service {
 	return &serviceImpl{
-		repository: repository,
-		commonUtils: commonUtils,
+		repository:    repository,
+		commonUtils:   commonUtils,
 		routingClient: routingClient,
-		config: config,
+		config:        config,
 	}
 }
 
@@ -48,7 +48,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	var sources []types.Location
 	var restaurantsID []string
-	for _ , value := range request.Entities {
+	for _, value := range request.Entities {
 		sources = append(sources, value.RestaurantLocation)
 		restaurantsID = append(restaurantsID, value.RestaurantID)
 	}
@@ -64,7 +64,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates, len(restaurantsEstimates))
 	for _, e := range restaurantsEstimates {
-		estimatesByRestaurant[e.RestaurantID] = e
+		estimatesByRestaurant[e.RestaurantId] = e
 	}
 
 	// Fetching sublocality_estimates by ID's
@@ -78,16 +78,16 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates, len(sublocalitiesEstimates))
 	for _, e := range sublocalitiesEstimates {
-		estimatesBySublocality[e.SublocalityID] = e
+		estimatesBySublocality[e.SublocalityId] = e
 	}
 
 	// TODO : If-else based on surface
 
 	// Calculating distance matrix
 	distanceMatrixRequest := routingengine.DistanceMatrixRequest{
-		Sources: sources,
-		Destinations: []types.Location{request.UserLocation},
-		Vehicle: constants.VEHICLE_TWO_WHEELER,
+		Sources:           sources,
+		Destinations:      []types.Location{request.UserLocation},
+		Vehicle:           constants.VEHICLE_TWO_WHEELER,
 		RoutingPreference: constants.ROUTING_PREFERENCE_TRAFFIC_AWARE,
 	}
 
@@ -104,19 +104,22 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 			continue
 		}
 
-		sublocalityEstimates, ok := estimatesBySublocality[restaurantEstimates.SublocalityID]
+		sublocalityEstimates, ok := estimatesBySublocality[restaurantEstimates.SublocalityId]
 		if !ok {
 			continue
 		}
 
+		restSection := restaurantEstimates.MealSection(mealType)
+		subSection := sublocalityEstimates.MealSection(mealType)
+
 		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
 
-		etaInSeconds := restaurantEstimates.RatSeconds + max(restaurantEstimates.KptSeconds, sublocalityEstimates.CatSeconds + sublocalityEstimates.FmSeconds + restaurantEstimates.PickupSeconds) + lastMile
+		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
-			RestaurantID: restaurantEstimates.RestaurantID,
+			RestaurantID: restaurantEstimates.RestaurantId,
 			EtaInSeconds: uint(etaInSeconds),
-			//TODO: displayMin, displayMax
+			//TODO: displayMin, displayMax ( what to do if 2 min ? )
 		})
 	}
 
@@ -124,12 +127,12 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 }
 
 func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error {
-	exists, err := s.repository.RestaurantEstimateExists(request.RestaurantID, request.Day, request.MealType)
+	overlaps, err := s.repository.RestaurantDayOverlapExists(request.RestaurantId, request.DayType)
 	if err != nil {
 		return fmt.Errorf("checking existing restaurant estimate failed: %w", err)
 	}
-	if exists {
-		return types.NewConflictError(fmt.Sprintf("restaurant estimate already exists for restaurantId=%s day=%s mealType=%s", request.RestaurantID, request.Day, request.MealType))
+	if overlaps {
+		return types.NewConflictError(fmt.Sprintf("restaurant estimate already exists for one or more of restaurantId=%s dayType=%v", request.RestaurantId, request.DayType))
 	}
 
 	request.UpdatedAt = float64(time.Now().Unix())
@@ -137,12 +140,12 @@ func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantE
 }
 
 func (s *serviceImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
-	exists, err := s.repository.SublocalityEstimateExists(request.SublocalityID, request.Day, request.MealType)
+	overlaps, err := s.repository.SublocalityDayOverlapExists(request.SublocalityId, request.Day)
 	if err != nil {
 		return fmt.Errorf("checking existing sublocality estimate failed: %w", err)
 	}
-	if exists {
-		return types.NewConflictError(fmt.Sprintf("sublocality estimate already exists for sublocalityId=%s day=%s mealType=%s", request.SublocalityID, request.Day, request.MealType))
+	if overlaps {
+		return types.NewConflictError(fmt.Sprintf("sublocality estimate already exists for one or more of sublocalityId=%s day=%v", request.SublocalityId, request.Day))
 	}
 
 	request.UpdatedAt = float64(time.Now().Unix())
@@ -159,22 +162,21 @@ func (s *serviceImpl) UpdateSublocalityEstimates(sublocalityId string, request *
 	return s.repository.UpdateSublocalityEstimates(sublocalityId, request)
 }
 
-
 // Helpers
 
 func getUniqueSublocalitiesId(restaurantsEstimates []types.EtaRestaurantEstimates) []string {
 	uniqueSublocalitiesId := make(map[string]struct{})
 
-	for _ , value := range restaurantsEstimates {
-		if _, exists := uniqueSublocalitiesId[value.SublocalityID]; exists {
+	for _, value := range restaurantsEstimates {
+		if _, exists := uniqueSublocalitiesId[value.SublocalityId]; exists {
 			continue
 		}
-		uniqueSublocalitiesId[value.SublocalityID] = struct{}{}
+		uniqueSublocalitiesId[value.SublocalityId] = struct{}{}
 	}
 
 	var result []string
-	
-	for sublocaityId  := range uniqueSublocalitiesId {
+
+	for sublocaityId := range uniqueSublocalitiesId {
 		result = append(result, sublocaityId)
 	}
 
@@ -184,16 +186,16 @@ func getUniqueSublocalitiesId(restaurantsEstimates []types.EtaRestaurantEstimate
 func (s *serviceImpl) getDistanceMatrix(qosLevel constants.QosLevel, distanceMatrixRequest *routingengine.DistanceMatrixRequest) (*routingengine.DistanceMatrixResponse, error) {
 	var distanceMatrixResponse *routingengine.DistanceMatrixResponse
 	var err error
-	if(qosLevel != "") {
-		distanceMatrixResponse, err =  s.routingClient.GetDistanceMatrixWithQoS(distanceMatrixRequest, qosLevel)
-	}else {
+	if qosLevel != "" {
+		distanceMatrixResponse, err = s.routingClient.GetDistanceMatrixWithQoS(distanceMatrixRequest, qosLevel)
+	} else {
 		distanceMatrixResponse, err = s.routingClient.GetDistanceMatrix(distanceMatrixRequest)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("distance matrix API call failed: %w", err)
 	}
-	
+
 	if len(distanceMatrixResponse.Data) == 0 || len(distanceMatrixResponse.Data) != len(distanceMatrixRequest.Sources) {
 		return nil, fmt.Errorf("invalid response from distance matrix API: expected %d sources, got %d", len(distanceMatrixRequest.Sources), len(distanceMatrixResponse.Data))
 	}

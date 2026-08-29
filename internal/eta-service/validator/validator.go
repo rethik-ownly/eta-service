@@ -37,6 +37,9 @@ func (v *validatorImpl) ValidateFetchEtaRequest(request *types.FetchEtaRequest) 
 	if request.UserID == "" {
 		return types.NewBadRequestError("invalid userId")
 	}
+	if request.UserLocation.Lat == 0 && request.UserLocation.Lng == 0 {
+		return types.NewBadRequestError("invalid user location")
+	}
 	if request.Entities == nil || len(request.Entities) > v.config.Eta.MaxEntities {
 		return types.NewBadRequestError("invalid entities")
 	}
@@ -44,54 +47,76 @@ func (v *validatorImpl) ValidateFetchEtaRequest(request *types.FetchEtaRequest) 
 }
 
 func (v *validatorImpl) ValidateInsertRestaurantEstimateRequest(request *types.InsertRestaurantEstimateRequest) error {
-	if request.RestaurantID == "" {
+	if request.RestaurantId == "" {
 		return types.NewBadRequestError("invalid restaurantId")
 	}
-	if request.CityID == "" {
+	if request.CityId == "" {
 		return types.NewBadRequestError("invalid cityId")
 	}
-	if request.ZoneID == "" {
+	if request.ZoneId == "" {
 		return types.NewBadRequestError("invalid zoneId")
 	}
-	if request.SublocalityID == "" {
+	if request.SublocalityId == "" {
 		return types.NewBadRequestError("invalid sublocalityId")
 	}
-	if !request.MealType.IsValid() {
-		return types.NewBadRequestError("invalid mealType")
+	if len(request.DayType) == 0 {
+		return types.NewBadRequestError("invalid dayType")
 	}
-	if !request.Day.IsValid() {
-		return types.NewBadRequestError("invalid day")
+	for _, day := range request.DayType {
+		if !day.IsValid() {
+			return types.NewBadRequestError("invalid dayType")
+		}
 	}
-	if request.RatSeconds < 0 || request.KptSeconds < 0 || request.PickupSeconds < 0 {
-		return types.NewBadRequestError("invalid estimate seconds")
+	if err := validateRestaurantMealEstimate(request.Breakfast); err != nil {
+		return err
 	}
-	if request.RatSampleCount < 0 || request.KptSampleCount < 0 || request.PickupSampleCount < 0 {
-		return types.NewBadRequestError("invalid sample count")
+	if err := validateRestaurantMealEstimate(request.Lunch); err != nil {
+		return err
+	}
+	if err := validateRestaurantMealEstimate(request.Snacks); err != nil {
+		return err
+	}
+	if err := validateRestaurantMealEstimate(request.Dinner); err != nil {
+		return err
+	}
+	if err := validateRestaurantMealEstimate(request.Latenight); err != nil {
+		return err
 	}
 	return nil
 }
 
 func (v *validatorImpl) ValidateInsertSublocalityEstimateRequest(request *types.InsertSublocalityEstimateRequest) error {
-	if request.SublocalityID == "" {
+	if request.SublocalityId == "" {
 		return types.NewBadRequestError("invalid sublocalityId")
 	}
-	if request.ZoneID == "" {
+	if request.ZoneId == "" {
 		return types.NewBadRequestError("invalid zoneId")
 	}
-	if request.CityID == "" {
+	if request.CityId == "" {
 		return types.NewBadRequestError("invalid cityId")
 	}
-	if !request.MealType.IsValid() {
-		return types.NewBadRequestError("invalid mealType")
-	}
-	if !request.Day.IsValid() {
+	if len(request.Day) == 0 {
 		return types.NewBadRequestError("invalid day")
 	}
-	if request.CatSeconds < 0 || request.FmSeconds < 0 {
-		return types.NewBadRequestError("invalid estimate seconds")
+	for _, day := range request.Day {
+		if !day.IsValid() {
+			return types.NewBadRequestError("invalid day")
+		}
 	}
-	if request.CatSampleCount < 0 || request.FmSampleCount < 0 {
-		return types.NewBadRequestError("invalid sample count")
+	if err := validateSublocalityMealEstimate(request.Breakfast); err != nil {
+		return err
+	}
+	if err := validateSublocalityMealEstimate(request.Lunch); err != nil {
+		return err
+	}
+	if err := validateSublocalityMealEstimate(request.Snacks); err != nil {
+		return err
+	}
+	if err := validateSublocalityMealEstimate(request.Dinner); err != nil {
+		return err
+	}
+	if err := validateSublocalityMealEstimate(request.Latenight); err != nil {
+		return err
 	}
 	return nil
 }
@@ -100,12 +125,31 @@ func (v *validatorImpl) ValidateUpdateRestaurantEstimates(restaurantId string, r
 	if restaurantId == "" {
 		return types.NewBadRequestError("invalid restaurantId")
 	}
-	if !request.MealType.IsValid() {
-		return types.NewBadRequestError("invalid mealType")
-	}
 	if !request.Day.IsValid() {
 		return types.NewBadRequestError("invalid day")
 	}
+	if request.Days != nil {
+		if len(*request.Days) == 0 {
+			return types.NewBadRequestError("invalid days")
+		}
+		for _, day := range *request.Days {
+			if !day.IsValid() {
+				return types.NewBadRequestError("invalid days")
+			}
+		}
+	}
+
+	hasMealFieldUpdate := request.RatSeconds != nil || request.RatSampleCount != nil ||
+		request.KptSeconds != nil || request.KptSampleCount != nil ||
+		request.PickupSeconds != nil || request.PickupSampleCount != nil
+
+	if request.MealType != "" && !request.MealType.IsValid() {
+		return types.NewBadRequestError("invalid mealType")
+	}
+	if hasMealFieldUpdate && request.MealType == "" {
+		return types.NewBadRequestError("mealType is required to update rat/kpt/pickup fields")
+	}
+
 	if request.RatSeconds != nil && *request.RatSeconds < 0 {
 		return types.NewBadRequestError("invalid ratSeconds")
 	}
@@ -124,13 +168,13 @@ func (v *validatorImpl) ValidateUpdateRestaurantEstimates(restaurantId string, r
 	if request.PickupSampleCount != nil && *request.PickupSampleCount < 0 {
 		return types.NewBadRequestError("invalid pickupSampleCount")
 	}
-	if request.CityID != nil && *request.CityID == "" {
+	if request.CityId != nil && *request.CityId == "" {
 		return types.NewBadRequestError("invalid cityId")
 	}
-	if request.ZoneID != nil && *request.ZoneID == "" {
+	if request.ZoneId != nil && *request.ZoneId == "" {
 		return types.NewBadRequestError("invalid zoneId")
 	}
-	if request.SublocalityID != nil && *request.SublocalityID == "" {
+	if request.SublocalityId != nil && *request.SublocalityId == "" {
 		return types.NewBadRequestError("invalid sublocalityId")
 	}
 	return nil
@@ -140,12 +184,30 @@ func (v *validatorImpl) ValidateUpdateSublocalityEstimates(sublocalityId string,
 	if sublocalityId == "" {
 		return types.NewBadRequestError("invalid sublocalityId")
 	}
-	if !request.MealType.IsValid() {
-		return types.NewBadRequestError("invalid mealType")
-	}
 	if !request.Day.IsValid() {
 		return types.NewBadRequestError("invalid day")
 	}
+	if request.Days != nil {
+		if len(*request.Days) == 0 {
+			return types.NewBadRequestError("invalid days")
+		}
+		for _, day := range *request.Days {
+			if !day.IsValid() {
+				return types.NewBadRequestError("invalid days")
+			}
+		}
+	}
+
+	hasMealFieldUpdate := request.CatSeconds != nil || request.CatSampleCount != nil ||
+		request.FmSeconds != nil || request.FmSampleCount != nil
+
+	if request.MealType != "" && !request.MealType.IsValid() {
+		return types.NewBadRequestError("invalid mealType")
+	}
+	if hasMealFieldUpdate && request.MealType == "" {
+		return types.NewBadRequestError("mealType is required to update cat/fm fields")
+	}
+
 	if request.CatSeconds != nil && *request.CatSeconds < 0 {
 		return types.NewBadRequestError("invalid catSeconds")
 	}
@@ -158,11 +220,36 @@ func (v *validatorImpl) ValidateUpdateSublocalityEstimates(sublocalityId string,
 	if request.FmSampleCount != nil && *request.FmSampleCount < 0 {
 		return types.NewBadRequestError("invalid fmSampleCount")
 	}
-	if request.ZoneID != nil && *request.ZoneID == "" {
+	if request.ZoneId != nil && *request.ZoneId == "" {
 		return types.NewBadRequestError("invalid zoneId")
 	}
-	if request.CityID != nil && *request.CityID == "" {
+	if request.CityId != nil && *request.CityId == "" {
 		return types.NewBadRequestError("invalid cityId")
+	}
+	return nil
+}
+
+// Helpers
+
+func validateRestaurantMealEstimate(estimate types.RestaurantMealEstimate) error {
+	if estimate.Rat.Seconds < 0 || estimate.Rat.SampleCount < 0 {
+		return types.NewBadRequestError("invalid rat estimate")
+	}
+	if estimate.Kpt.Seconds < 0 || estimate.Kpt.SampleCount < 0 {
+		return types.NewBadRequestError("invalid kpt estimate")
+	}
+	if estimate.Pickup.Seconds < 0 || estimate.Pickup.SampleCount < 0 {
+		return types.NewBadRequestError("invalid pickup estimate")
+	}
+	return nil
+}
+
+func validateSublocalityMealEstimate(estimate types.SublocalityMealEstimate) error {
+	if estimate.Cat.Seconds < 0 || estimate.Cat.SampleCount < 0 {
+		return types.NewBadRequestError("invalid cat estimate")
+	}
+	if estimate.Fm.Seconds < 0 || estimate.Fm.SampleCount < 0 {
+		return types.NewBadRequestError("invalid fm estimate")
 	}
 	return nil
 }

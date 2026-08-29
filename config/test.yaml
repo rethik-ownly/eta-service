@@ -57,7 +57,7 @@ externalServices:
     distanceMatrixAPI:
       path: "/api/v1/routes/distanceMatrix"
       timeoutInMs: 2000
-      qosLevel: "QOS3"
+      qosLevel: "qos3"
   
 eta:
   maxEntities: 100

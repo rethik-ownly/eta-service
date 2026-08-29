@@ -62,6 +62,26 @@ func (mt MealType) IsValid() bool{
 	}
 }
 
+// BsonKey returns the nested bson field name for this meal type within the
+// eta_restaurant_estimates / eta_sublocality_estimates documents (e.g.
+// "breakfast", "snacks", "latenight").
+func (mt MealType) BsonKey() string {
+	switch mt {
+	case Breakfast:
+		return "breakfast"
+	case Lunch:
+		return "lunch"
+	case Snack:
+		return "snacks"
+	case Dinner:
+		return "dinner"
+	case LateNight:
+		return "latenight"
+	default:
+		return ""
+	}
+}
+
 // eta_delivery_type
 type DeliveryType string
 

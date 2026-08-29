@@ -9,16 +9,17 @@ import (
 	"github.com/nutanalabs/eta-service/internal/types"
 	"github.com/nutanalabs/rapido-mongo-go/mongo/results"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Repository interface {
-	FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
-	FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
-	FetchRestaurantEstimatesByIDs(restaurantsID []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaRestaurantEstimates, error)
-	FetchSublocalityEstimatesByIDs(sublocalitiesID []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaSublocalityEstimates, error)
+	FetchRestaurantEstimates(restaurantId string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error)
+	FetchSublocalityEstimates(sublocalityId string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error)
+	FetchRestaurantEstimatesByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaRestaurantEstimates, error)
+	FetchSublocalityEstimatesByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.EtaSublocalityEstimates, error)
 
-	RestaurantEstimateExists(restaurantId string, day constants.Day, mealType constants.MealType) (bool, error)
-	SublocalityEstimateExists(sublocalityId string, day constants.Day, mealType constants.MealType) (bool, error)
+	RestaurantDayOverlapExists(restaurantId string, days []constants.Day) (bool, error)
+	SublocalityDayOverlapExists(sublocalityId string, days []constants.Day) (bool, error)
 
 	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
 	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error
@@ -37,14 +38,14 @@ func NewRepository(mongoRepository mongo.Repository) Repository {
 	}
 }
 
-func (r *repositoryImpl) FetchRestaurantEstimates(restaurant_id string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error) {
+func (r *repositoryImpl) FetchRestaurantEstimates(restaurantId string, day constants.Day, mealType constants.MealType) (*types.EtaRestaurantEstimates, error) {
 	filter := bson.M{
-		"restaurantId": restaurant_id,
-		"day":          day,
-		"mealType":     mealType,
+		"restaurantId": restaurantId,
+		"dayType":      day,
 	}
+	opts := options.FindOne().SetProjection(restaurantMealProjection(mealType))
 
-	result := r.mongoRepository.FindOne(constants.ETA_RESTAURANT_ESTIMATES, filter, nil)
+	result := r.mongoRepository.FindOne(constants.ETA_RESTAURANT_ESTIMATES, filter, opts)
 
 	var estimates types.EtaRestaurantEstimates
 	if err := result.Decode(&estimates); err != nil {
@@ -53,14 +54,14 @@ func (r *repositoryImpl) FetchRestaurantEstimates(restaurant_id string, day cons
 	return &estimates, nil
 }
 
-func (r *repositoryImpl) FetchSublocalityEstimates(sublocality_id string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error) {
+func (r *repositoryImpl) FetchSublocalityEstimates(sublocalityId string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error) {
 	filter := bson.M{
-		"sublocalityId": sublocality_id,
+		"sublocalityId": sublocalityId,
 		"day":           day,
-		"mealType":      mealType,
 	}
+	opts := options.FindOne().SetProjection(sublocalityMealProjection(mealType))
 
-	result := r.mongoRepository.FindOne(constants.ETA_SUBLOCALITY_ESTIMATES, filter, nil)
+	result := r.mongoRepository.FindOne(constants.ETA_SUBLOCALITY_ESTIMATES, filter, opts)
 
 	var estimates types.EtaSublocalityEstimates
 	if err := result.Decode(&estimates); err != nil {
@@ -84,16 +85,16 @@ func (r *repositoryImpl) fetchRestaurantEstimatesByIDsBatch(restaurantsId []stri
 		"restaurantId": bson.M{
 			"$in": restaurantsId,
 		},
-		"day":      day,
-		"mealType": mealType,
+		"dayType": day,
 	}
+	opts := options.Find().SetProjection(restaurantMealProjection(mealType))
 
 	var restaurantsEstimates []types.EtaRestaurantEstimates
 	queryResponse := results.QueryResponse{
 		Data: &restaurantsEstimates,
 	}
 
-	err := r.mongoRepository.FindMany(constants.ETA_RESTAURANT_ESTIMATES, filter, &queryResponse, nil)
+	err := r.mongoRepository.FindMany(constants.ETA_RESTAURANT_ESTIMATES, filter, &queryResponse, opts)
 
 	if err != nil {
 		return nil, err
@@ -121,16 +122,16 @@ func (r *repositoryImpl) fetchSublocalityEstimatesByIDsBatch(sublocalitiesId []s
 		"sublocalityId": bson.M{
 			"$in": sublocalitiesId,
 		},
-		"day":      day,
-		"mealType": mealType,
+		"day": day,
 	}
+	opts := options.Find().SetProjection(sublocalityMealProjection(mealType))
 
 	var sublocalitiesEstimates []types.EtaSublocalityEstimates
 	queryResponse := results.QueryResponse{
 		Data: &sublocalitiesEstimates,
 	}
 
-	err := r.mongoRepository.FindMany(constants.ETA_SUBLOCALITY_ESTIMATES, filter, &queryResponse, nil)
+	err := r.mongoRepository.FindMany(constants.ETA_SUBLOCALITY_ESTIMATES, filter, &queryResponse, opts)
 
 	if err != nil {
 		return nil, err
@@ -143,11 +144,15 @@ func (r *repositoryImpl) fetchSublocalityEstimatesByIDsBatch(sublocalitiesId []s
 	return []types.EtaSublocalityEstimates{}, nil
 }
 
-func (r *repositoryImpl) RestaurantEstimateExists(restaurantId string, day constants.Day, mealType constants.MealType) (bool, error) {
+// RestaurantDayOverlapExists reports whether any existing document for
+// restaurantId already covers one or more of the given days. Used by Insert
+// to keep each day covered by at most one document per restaurant.
+func (r *repositoryImpl) RestaurantDayOverlapExists(restaurantId string, days []constants.Day) (bool, error) {
 	filter := bson.M{
 		"restaurantId": restaurantId,
-		"day":          day,
-		"mealType":     mealType,
+		"dayType": bson.M{
+			"$in": days,
+		},
 	}
 
 	count, err := r.mongoRepository.CountDocuments(constants.ETA_RESTAURANT_ESTIMATES, filter, nil)
@@ -157,11 +162,15 @@ func (r *repositoryImpl) RestaurantEstimateExists(restaurantId string, day const
 	return count > 0, nil
 }
 
-func (r *repositoryImpl) SublocalityEstimateExists(sublocalityId string, day constants.Day, mealType constants.MealType) (bool, error) {
+// SublocalityDayOverlapExists reports whether any existing document for
+// sublocalityId already covers one or more of the given days. Used by
+// Insert to keep each day covered by at most one document per sublocality.
+func (r *repositoryImpl) SublocalityDayOverlapExists(sublocalityId string, days []constants.Day) (bool, error) {
 	filter := bson.M{
 		"sublocalityId": sublocalityId,
-		"day":           day,
-		"mealType":      mealType,
+		"day": bson.M{
+			"$in": days,
+		},
 	}
 
 	count, err := r.mongoRepository.CountDocuments(constants.ETA_SUBLOCALITY_ESTIMATES, filter, nil)
@@ -192,39 +201,45 @@ func (r *repositoryImpl) InsertSublocalityEstimates(request *types.InsertSubloca
 func (r *repositoryImpl) UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error {
 	filter := bson.M{
 		"restaurantId": restaurantId,
-		"day":          request.Day,
-		"mealType":     request.MealType,
+		"dayType":      request.Day,
 	}
 
 	set := bson.M{
 		"updatedAt": request.UpdatedAt,
 	}
-	if request.RatSeconds != nil {
-		set["ratSeconds"] = *request.RatSeconds
+	if request.Days != nil {
+		set["dayType"] = *request.Days
 	}
-	if request.RatSampleCount != nil {
-		set["ratSampleCount"] = *request.RatSampleCount
+	if request.CityId != nil {
+		set["cityId"] = *request.CityId
 	}
-	if request.KptSeconds != nil {
-		set["kptSeconds"] = *request.KptSeconds
+	if request.ZoneId != nil {
+		set["zoneId"] = *request.ZoneId
 	}
-	if request.KptSampleCount != nil {
-		set["kptSampleCount"] = *request.KptSampleCount
+	if request.SublocalityId != nil {
+		set["sublocalityId"] = *request.SublocalityId
 	}
-	if request.PickupSeconds != nil {
-		set["pickupSeconds"] = *request.PickupSeconds
-	}
-	if request.PickupSampleCount != nil {
-		set["pickupSampleCount"] = *request.PickupSampleCount
-	}
-	if request.CityID != nil {
-		set["cityId"] = *request.CityID
-	}
-	if request.ZoneID != nil {
-		set["zoneId"] = *request.ZoneID
-	}
-	if request.SublocalityID != nil {
-		set["sublocalityId"] = *request.SublocalityID
+
+	if request.MealType != "" {
+		prefix := request.MealType.BsonKey()
+		if request.RatSeconds != nil {
+			set[prefix+".rat.seconds"] = *request.RatSeconds
+		}
+		if request.RatSampleCount != nil {
+			set[prefix+".rat.sampleCount"] = *request.RatSampleCount
+		}
+		if request.KptSeconds != nil {
+			set[prefix+".kpt.seconds"] = *request.KptSeconds
+		}
+		if request.KptSampleCount != nil {
+			set[prefix+".kpt.sampleCount"] = *request.KptSampleCount
+		}
+		if request.PickupSeconds != nil {
+			set[prefix+".pickup.seconds"] = *request.PickupSeconds
+		}
+		if request.PickupSampleCount != nil {
+			set[prefix+".pickup.sampleCount"] = *request.PickupSampleCount
+		}
 	}
 
 	_, err := r.mongoRepository.UpdateOne(constants.ETA_RESTAURANT_ESTIMATES, filter, bson.M{"$set": set}, nil)
@@ -238,29 +253,35 @@ func (r *repositoryImpl) UpdateSublocalityEstimates(sublocalityId string, reques
 	filter := bson.M{
 		"sublocalityId": sublocalityId,
 		"day":           request.Day,
-		"mealType":      request.MealType,
 	}
 
 	set := bson.M{
 		"updatedAt": request.UpdatedAt,
 	}
-	if request.ZoneID != nil {
-		set["zoneId"] = *request.ZoneID
+	if request.Days != nil {
+		set["day"] = *request.Days
 	}
-	if request.CityID != nil {
-		set["cityId"] = *request.CityID
+	if request.ZoneId != nil {
+		set["zoneId"] = *request.ZoneId
 	}
-	if request.CatSeconds != nil {
-		set["catSeconds"] = *request.CatSeconds
+	if request.CityId != nil {
+		set["cityId"] = *request.CityId
 	}
-	if request.CatSampleCount != nil {
-		set["catSampleCount"] = *request.CatSampleCount
-	}
-	if request.FmSeconds != nil {
-		set["fmSeconds"] = *request.FmSeconds
-	}
-	if request.FmSampleCount != nil {
-		set["fmSampleCount"] = *request.FmSampleCount
+
+	if request.MealType != "" {
+		prefix := request.MealType.BsonKey()
+		if request.CatSeconds != nil {
+			set[prefix+".cat.seconds"] = *request.CatSeconds
+		}
+		if request.CatSampleCount != nil {
+			set[prefix+".cat.sampleCount"] = *request.CatSampleCount
+		}
+		if request.FmSeconds != nil {
+			set[prefix+".fm.seconds"] = *request.FmSeconds
+		}
+		if request.FmSampleCount != nil {
+			set[prefix+".fm.sampleCount"] = *request.FmSampleCount
+		}
 	}
 
 	_, err := r.mongoRepository.UpdateOne(constants.ETA_SUBLOCALITY_ESTIMATES, filter, bson.M{"$set": set}, nil)
@@ -272,23 +293,49 @@ func (r *repositoryImpl) UpdateSublocalityEstimates(sublocalityId string, reques
 
 // Helpers
 
+// restaurantMealProjection limits the fetched fields to only what's needed
+// to resolve an ETA for the given mealType: the join key (sublocalityId)
+// and the single relevant nested meal section, instead of pulling all 5
+// meal-type sections over the wire.
+func restaurantMealProjection(mealType constants.MealType) bson.M {
+	projection := bson.M{
+		"restaurantId":  1,
+		"sublocalityId": 1,
+	}
+	if key := mealType.BsonKey(); key != "" {
+		projection[key] = 1
+	}
+	return projection
+}
+
+// sublocalityMealProjection limits the fetched fields to only what's needed
+// to resolve an ETA for the given mealType: the join key (sublocalityId)
+// and the single relevant nested meal section.
+func sublocalityMealProjection(mealType constants.MealType) bson.M {
+	projection := bson.M{
+		"sublocalityId": 1,
+	}
+	if key := mealType.BsonKey(); key != "" {
+		projection[key] = 1
+	}
+	return projection
+}
+
 // restaurantInsertRequestToEstimates maps an insert request to the
 // persisted/domain estimates type.
 func restaurantInsertRequestToEstimates(request *types.InsertRestaurantEstimateRequest) *types.EtaRestaurantEstimates {
 	return &types.EtaRestaurantEstimates{
-		RestaurantID:      request.RestaurantID,
-		RatSeconds:        request.RatSeconds,
-		RatSampleCount:    request.RatSampleCount,
-		KptSeconds:        request.KptSeconds,
-		KptSampleCount:    request.KptSampleCount,
-		PickupSeconds:     request.PickupSeconds,
-		PickupSampleCount: request.PickupSampleCount,
-		MealType:          request.MealType,
-		Day:               request.Day,
-		CityID:            request.CityID,
-		ZoneID:            request.ZoneID,
-		SublocalityID:     request.SublocalityID,
-		UpdatedAt:         request.UpdatedAt,
+		RestaurantId:  request.RestaurantId,
+		DayType:       request.DayType,
+		CityId:        request.CityId,
+		ZoneId:        request.ZoneId,
+		SublocalityId: request.SublocalityId,
+		Breakfast:     request.Breakfast,
+		Lunch:         request.Lunch,
+		Snacks:        request.Snacks,
+		Dinner:        request.Dinner,
+		Latenight:     request.Latenight,
+		UpdatedAt:     request.UpdatedAt,
 	}
 }
 
@@ -296,16 +343,16 @@ func restaurantInsertRequestToEstimates(request *types.InsertRestaurantEstimateR
 // persisted/domain estimates type.
 func sublocalityInsertRequestToEstimates(request *types.InsertSublocalityEstimateRequest) *types.EtaSublocalityEstimates {
 	return &types.EtaSublocalityEstimates{
-		SublocalityID:  request.SublocalityID,
-		ZoneID:         request.ZoneID,
-		CityID:         request.CityID,
-		MealType:       request.MealType,
-		Day:            request.Day,
-		CatSeconds:     request.CatSeconds,
-		CatSampleCount: request.CatSampleCount,
-		FmSeconds:      request.FmSeconds,
-		FmSampleCount:  request.FmSampleCount,
-		UpdatedAt:      request.UpdatedAt,
+		SublocalityId: request.SublocalityId,
+		Day:           request.Day,
+		ZoneId:        request.ZoneId,
+		CityId:        request.CityId,
+		Breakfast:     request.Breakfast,
+		Lunch:         request.Lunch,
+		Snacks:        request.Snacks,
+		Dinner:        request.Dinner,
+		Latenight:     request.Latenight,
+		UpdatedAt:     request.UpdatedAt,
 	}
 }
 
