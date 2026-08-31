@@ -30,6 +30,7 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 
+	
 	var fetchEtaRequest types.FetchEtaRequest
 	if err := ctx.ShouldBindJSON(&fetchEtaRequest); err != nil {
 		logger.Error(logger.Format{
@@ -44,6 +45,23 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
 		return
 	}
+
+	requestId := ctx.GetHeader("x-request-id")
+	if(requestId == "") {
+		logger.Error(logger.Format{
+			RequestID: requestId,
+			Event:   "VALIDATE_REQUEST_ID",
+			Message: "missing mandatory request id",
+			Data: map[string]string{
+				"method": method,
+				"route":  route,
+			},
+		})
+		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError("missing mandatory request id")))
+		return
+	}
+
+	fetchEtaRequest.OrderId = ctx.GetHeader("x-order-id")
 
 	// Do validation 
 	if err := h.validator.ValidateFetchEtaRequest(&fetchEtaRequest) ; err != nil {

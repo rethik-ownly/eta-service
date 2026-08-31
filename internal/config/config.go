@@ -25,7 +25,7 @@ func InitDefaultConfig() *Config {
 }
 
 func InitConfig(configFile string) *Config {
-	fmt.Println(configFile)
+	// fmt.Println(configFile)
 	viper.AutomaticEnv()
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
@@ -47,7 +47,7 @@ func InitConfig(configFile string) *Config {
 		panic(err)
 	}
 
-	fmt.Println(AppConfig)
+	// fmt.Println(AppConfig)
 
 	return &AppConfig
 }

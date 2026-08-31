@@ -2,6 +2,7 @@ package validator
 
 import (
 	"github.com/nutanalabs/eta-service/internal/config"
+	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/types"
 )
 
@@ -42,6 +43,9 @@ func (v *validatorImpl) ValidateFetchEtaRequest(request *types.FetchEtaRequest) 
 	}
 	if request.Entities == nil || len(request.Entities) > v.config.Eta.MaxEntities {
 		return types.NewBadRequestError("invalid entities")
+	}
+	if request.Surface == constants.Cart && request.OrderId == "" {
+		return types.NewBadRequestError("invalid orderId")
 	}
 	return nil
 }
