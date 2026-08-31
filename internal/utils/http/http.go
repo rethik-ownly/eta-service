@@ -12,8 +12,8 @@ type HTTPUtils interface {
 	ParseErrorResponse(err error) types.HTTPResponse
 	FetchErrorStatusCode(response *errorhandler.ResponseError) int
 	FetchErrorBody(response *errorhandler.ResponseError) []byte
-	BuildErrorResponse(err *types.HTTPStatusError) types.ErrorResponse
-	BuildSuccessResponse(data interface{}) types.ErrorResponse
+	BuildErrorResponse(err *types.HTTPStatusError) types.APIResponse
+	BuildSuccessResponse(data interface{}) types.APIResponse
 }
 
 type httpUtilsImpl struct{}
@@ -56,16 +56,16 @@ func (hu *httpUtilsImpl) FetchErrorBody(response *errorhandler.ResponseError) []
 	return response.Body
 }
 
-func (hu *httpUtilsImpl) BuildErrorResponse(err *types.HTTPStatusError) types.ErrorResponse {
-	return types.ErrorResponse{
+func (hu *httpUtilsImpl) BuildErrorResponse(err *types.HTTPStatusError) types.APIResponse {
+	return types.APIResponse{
 		Success: false,
 		Data:    nil,
 		Error:   err,
 	}
 }
 
-func (hu *httpUtilsImpl) BuildSuccessResponse(data interface{}) types.ErrorResponse {
-	return types.ErrorResponse{
+func (hu *httpUtilsImpl) BuildSuccessResponse(data interface{}) types.APIResponse {
+	return types.APIResponse{
 		Success: true,
 		Data:    data,
 		Error:   nil,

@@ -6,12 +6,6 @@ import (
 	"strconv"
 )
 
-type ErrorResponse struct {
-	Success bool             `json:"success"`
-	Data    interface{}      `json:"data"`
-	Error   *HTTPStatusError `json:"error"`
-}
-
 type HTTPStatusError struct {
 	Message        string `json:"message"`
 	Code           string `json:"code"`
