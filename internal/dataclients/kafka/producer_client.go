@@ -81,7 +81,7 @@ func newKafkaProducer(config *config.Config) (*kafka.Producer, error) {
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
-					fmt.Println("Delivery failed: %v", ev.TopicPartition.Error)
+					fmt.Printf("Delivery failed: %v\n", ev.TopicPartition.Error)
 				}
 			}
 		}

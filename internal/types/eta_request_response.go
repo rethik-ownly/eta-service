@@ -26,7 +26,8 @@ type FetchEtaRequest struct {
 	UserLocation Location                `json:"userLocation" binding:"required"`
 	Options      FetchEtaRequestOptions  `json:"options"`
 	Entities     []FetchEtaRequestEntity `json:"entities"`
-	OrderId string `json:"-"`
+	OrderId      string                  `json:"-"`
+	RequestId    string                  `json:"-"`
 }
 
 type FetchEtaResponse struct {

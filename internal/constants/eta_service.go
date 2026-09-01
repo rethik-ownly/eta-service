@@ -4,11 +4,11 @@ package constants
 type Surface string
 
 const (
-	Search Surface = "SEARCH"
-	Feed Surface = "FEED"
+	Search     Surface = "SEARCH"
+	Feed       Surface = "FEED"
 	Restaurant Surface = "RESTAURANT"
-	Cart Surface = "CART"
-	Promise Surface = "PROMISE"
+	Cart       Surface = "CART"
+	Promise    Surface = "PROMISE"
 )
 
 func (s Surface) IsValid() bool {
@@ -24,13 +24,13 @@ func (s Surface) IsValid() bool {
 type Day string
 
 const (
-	Monday Day = "MONDAY"
-	Tuesday Day = "TUESDAY"
+	Monday    Day = "MONDAY"
+	Tuesday   Day = "TUESDAY"
 	Wednesday Day = "WEDNESDAY"
-	Thursday Day = "THURSDAY"
-	Friday Day = "FRIDAY"
-	Saturday Day = "SATURDAY"
-	Sunday Day = "SUNDAY"
+	Thursday  Day = "THURSDAY"
+	Friday    Day = "FRIDAY"
+	Saturday  Day = "SATURDAY"
+	Sunday    Day = "SUNDAY"
 )
 
 func (d Day) IsValid() bool {
@@ -47,13 +47,13 @@ type MealType string
 
 const (
 	Breakfast MealType = "BREAKFAST"
-	Lunch MealType = "LUNCH"
-	Dinner MealType = "DINNER"
+	Lunch     MealType = "LUNCH"
+	Dinner    MealType = "DINNER"
 	LateNight MealType = "LATE_NIGHT"
-	Snack MealType = "SNACK"
+	Snack     MealType = "SNACK"
 )
 
-func (mt MealType) IsValid() bool{
+func (mt MealType) IsValid() bool {
 	switch mt {
 	case Breakfast, LateNight, Lunch, Dinner, Snack:
 		return true
@@ -87,7 +87,7 @@ type DeliveryType string
 
 const (
 	Standard DeliveryType = "STANDARD"
-	Express DeliveryType = "EXPRESS"
+	Express  DeliveryType = "EXPRESS"
 )
 
 func (dt DeliveryType) IsValid() bool {
@@ -103,16 +103,24 @@ func (dt DeliveryType) IsValid() bool {
 type QosLevel string
 
 const (
-	QosOne QosLevel = "qos1"
-	QosTwo QosLevel = "qos2"
+	QosOne   QosLevel = "qos1"
+	QosTwo   QosLevel = "qos2"
 	QosThree QosLevel = "qos3"
 )
 
 func (q QosLevel) IsValid() bool {
-	switch q{
-	case QosOne,QosTwo,QosThree:
+	switch q {
+	case QosOne, QosTwo, QosThree:
 		return true
 	default:
 		return false
 	}
 }
+
+// EventType tags which formula produced a FetchEta analytics event.
+type EventType string
+
+const (
+	EventTypeNewEta    EventType = "NEW_ETA"
+	EventTypeLegacyEta EventType = "LEGACY_ETA"
+)

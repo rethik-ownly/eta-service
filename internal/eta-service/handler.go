@@ -13,14 +13,14 @@ import (
 )
 
 type Handler struct {
-	service service.Service
+	service   service.Service
 	httpUtils httpUtils.HTTPUtils
 	validator validator.Validator
 }
 
 func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils, validator validator.Validator) *Handler {
 	return &Handler{
-		service: service,
+		service:   service,
 		httpUtils: httpUtils,
 		validator: validator,
 	}
@@ -30,7 +30,6 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 
-	
 	var fetchEtaRequest types.FetchEtaRequest
 	if err := ctx.ShouldBindJSON(&fetchEtaRequest); err != nil {
 		logger.Error(logger.Format{
@@ -47,11 +46,11 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	}
 
 	requestId := ctx.GetHeader("x-request-id")
-	if(requestId == "") {
+	if requestId == "" {
 		logger.Error(logger.Format{
 			RequestID: requestId,
-			Event:   "VALIDATE_REQUEST_ID",
-			Message: "missing mandatory request id",
+			Event:     "VALIDATE_REQUEST_ID",
+			Message:   "missing mandatory request id",
 			Data: map[string]string{
 				"method": method,
 				"route":  route,
@@ -62,11 +61,12 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	}
 
 	fetchEtaRequest.OrderId = ctx.GetHeader("x-order-id")
+	fetchEtaRequest.RequestId = requestId
 
-	// Do validation 
-	if err := h.validator.ValidateFetchEtaRequest(&fetchEtaRequest) ; err != nil {
+	// Do validation
+	if err := h.validator.ValidateFetchEtaRequest(&fetchEtaRequest); err != nil {
 		logger.Error(logger.Format{
-			Event: "VALIDATE_FETCH_ETA_REQUEST",
+			Event:   "VALIDATE_FETCH_ETA_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
 			Data: map[string]string{
 				"error":  err.Error(),
@@ -81,7 +81,7 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	resp, err := h.service.FetchEta(&fetchEtaRequest)
 
 	if err != nil {
-		
+
 		logger.Error(logger.Format{
 			Event:   "FETCH_ETA_SERVICE_ERROR",
 			Message: "failed to fetch eta",
@@ -103,7 +103,7 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 	var restaurantEstimates types.InsertRestaurantEstimateRequest
-	
+
 	if err := ctx.ShouldBindJSON(&restaurantEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "BIND_INSERT_RESTAURANT_ESTIMATE_REQUEST",
@@ -118,9 +118,9 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.validator.ValidateInsertRestaurantEstimateRequest(&restaurantEstimates) ; err != nil {
+	if err := h.validator.ValidateInsertRestaurantEstimateRequest(&restaurantEstimates); err != nil {
 		logger.Error(logger.Format{
-			Event: "VALIDATE_INSERT_RESTAURANT_ESTIMATE_REQUEST",
+			Event:   "VALIDATE_INSERT_RESTAURANT_ESTIMATE_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
 			Data: map[string]string{
 				"error":  err.Error(),
@@ -158,7 +158,7 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 	var sublocalityEstimates types.InsertSublocalityEstimateRequest
-	
+
 	if err := ctx.ShouldBindJSON(&sublocalityEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "BIND_INSERT_SUBLOCALITY_ESTIMATE_REQUEST",
@@ -173,9 +173,9 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.validator.ValidateInsertSublocalityEstimateRequest(&sublocalityEstimates) ; err != nil {
+	if err := h.validator.ValidateInsertSublocalityEstimateRequest(&sublocalityEstimates); err != nil {
 		logger.Error(logger.Format{
-			Event: "VALIDATE_INSERT_SUBLOCALITY_ESTIMATE_REQUEST",
+			Event:   "VALIDATE_INSERT_SUBLOCALITY_ESTIMATE_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
 			Data: map[string]string{
 				"error":  err.Error(),

@@ -2,22 +2,25 @@ package config
 
 type KafkaConfig struct {
 	// Health Checks
-	IsConsumerHealthCheckEnabled bool   `mapstructure:"isConsumerHealthCheckEnabled"`
-	IsProducerHealthCheckEnabled bool   `mapstructure:"isProducerHealthCheckEnabled"`
+	IsConsumerHealthCheckEnabled bool `mapstructure:"isConsumerHealthCheckEnabled"`
+	IsProducerHealthCheckEnabled bool `mapstructure:"isProducerHealthCheckEnabled"`
 
-	ConsumersEnabled             bool   `mapstructure:"consumersEnabled"`
-	BootstrapServers             string `mapstructure:"bootstrapServers"`
+	BootstrapServers string `mapstructure:"bootstrapServers"`
 
 	// Consumer
-	GroupId          string `mapstructure:"groupId"`
-	AutoOffsetReset  string `mapstructure:"autoOffsetReset"`
-	EnableAutoCommit bool   `mapstructure:"enableAutoCommit"`
-	SessionTimeout   int    `mapstructure:"sessionTimeout"`
+	GroupId            string `mapstructure:"groupId"`
+	AutoOffsetReset    string `mapstructure:"autoOffsetReset"`
+	EnableAutoCommit   bool   `mapstructure:"enableAutoCommit"`
+	SessionTimeoutInMs int    `mapstructure:"sessionTimeoutInMs"`
 
 	// Producer
 	LingerIntervalInMs int `mapstructure:"lingerIntervalInMs"`
 	BatchSizeInBytes   int `mapstructure:"batchSizeInBytes"`
 	WorkerPoolSize     int `mapstructure:"workerPoolSize"`
+
+	// Toggles
+	ShadowEventsEnabled bool `mapstructure:"shadowEventsEnabled"`
+	ConsumersEnabled    bool `mapstructure:"consumersEnabled"`
 }
 
 func (c *Config) IsKafkaConsumerHealthCheckEnabled() bool {
@@ -48,8 +51,8 @@ func (c *Config) IsKafkaAutoCommitEnabled() bool {
 	return c.Kafka.EnableAutoCommit
 }
 
-func (c *Config) GetKafkaSessionTimeout() int {
-	return c.Kafka.SessionTimeout
+func (c *Config) GetKafkaSessionTimeoutInMs() int {
+	return c.Kafka.SessionTimeoutInMs
 }
 
 func (c *Config) GetKafkaLingerIntervalInMs() int {
@@ -64,21 +67,26 @@ func (c *Config) GetKafkaWorkerPoolSize() int {
 	return c.Kafka.WorkerPoolSize
 }
 
+func (c *Config) GetKafkaShadowEventsEnabled() bool {
+	return c.Kafka.ShadowEventsEnabled
+}
+
 func (c *Config) GetKafkaConfig() KafkaConfig {
 	var kafkaConfig = KafkaConfig{
 		IsConsumerHealthCheckEnabled: c.Kafka.IsConsumerHealthCheckEnabled,
 		IsProducerHealthCheckEnabled: c.Kafka.IsProducerHealthCheckEnabled,
-		ConsumersEnabled: c.Kafka.ConsumersEnabled,
-		BootstrapServers:         c.Kafka.BootstrapServers,
+		ConsumersEnabled:             c.Kafka.ConsumersEnabled,
+		BootstrapServers:             c.Kafka.BootstrapServers,
 
-		GroupId:                  c.Kafka.GroupId,
-		AutoOffsetReset:          c.Kafka.AutoOffsetReset,
-		EnableAutoCommit:         c.Kafka.EnableAutoCommit,
-		SessionTimeout:           c.Kafka.SessionTimeout,
-		
-		LingerIntervalInMs: c.Kafka.LingerIntervalInMs,
-		WorkerPoolSize: c.Kafka.WorkerPoolSize,
-		BatchSizeInBytes: c.Kafka.BatchSizeInBytes,
+		GroupId:            c.Kafka.GroupId,
+		AutoOffsetReset:    c.Kafka.AutoOffsetReset,
+		EnableAutoCommit:   c.Kafka.EnableAutoCommit,
+		SessionTimeoutInMs: c.Kafka.SessionTimeoutInMs,
+
+		LingerIntervalInMs:  c.Kafka.LingerIntervalInMs,
+		WorkerPoolSize:      c.Kafka.WorkerPoolSize,
+		BatchSizeInBytes:    c.Kafka.BatchSizeInBytes,
+		ShadowEventsEnabled: c.Kafka.ShadowEventsEnabled,
 	}
 
 	return kafkaConfig

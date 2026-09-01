@@ -1,12 +1,18 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/constants"
+	"github.com/nutanalabs/eta-service/internal/dataclients/kafka"
 	"github.com/nutanalabs/eta-service/internal/dataclients/mongo"
 	"github.com/nutanalabs/eta-service/internal/types"
+	logger "github.com/nutanalabs/rapido-logger-go"
 	"github.com/nutanalabs/rapido-mongo-go/mongo/results"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -26,15 +32,21 @@ type Repository interface {
 
 	UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error
 	UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error
+
+	PublishFetchEtaEvent(eventType constants.EventType, request *types.FetchEtaRequest, response []types.FetchEtaResponse, err error)
 }
 
 type repositoryImpl struct {
 	mongoRepository mongo.Repository
+	kafkaRepository kafka.Repository
+	config          *config.Config
 }
 
-func NewRepository(mongoRepository mongo.Repository) Repository {
+func NewRepository(mongoRepository mongo.Repository, kafkaRepository kafka.Repository, config *config.Config) Repository {
 	return &repositoryImpl{
 		mongoRepository: mongoRepository,
+		kafkaRepository: kafkaRepository,
+		config:          config,
 	}
 }
 
@@ -291,6 +303,31 @@ func (r *repositoryImpl) UpdateSublocalityEstimates(sublocalityId string, reques
 	return nil
 }
 
+func (r *repositoryImpl) PublishFetchEtaEvent(eventType constants.EventType, request *types.FetchEtaRequest, response []types.FetchEtaResponse, fetchErr error) {
+	if !r.config.GetKafkaShadowEventsEnabled() {
+		return
+	}
+
+	event := fetchEtaRequestToAnalyticsEvent(eventType, request, response, fetchErr)
+
+	go func() {
+		payload, marshalErr := json.Marshal(event)
+		if marshalErr != nil {
+			logger.Error(logger.Format{
+				Event:   "MARSHAL_FETCH_ETA_ANALYTICS_EVENT",
+				Message: fmt.Sprintf("error marshaling event: %v", marshalErr),
+			})
+			return
+		}
+		if sendErr := r.kafkaRepository.SendMessage(constants.FETCH_ETA_EVENTS_TOPIC, payload); sendErr != nil {
+			logger.Error(logger.Format{
+				Event:   "PUBLISH_FETCH_ETA_ANALYTICS_EVENT",
+				Message: fmt.Sprintf("error publishing event: %v", sendErr),
+			})
+		}
+	}()
+}
+
 // Helpers
 
 // restaurantMealProjection limits the fetched fields to only what's needed
@@ -386,4 +423,28 @@ func fetchInBatches[T any](
 	}
 
 	return result, nil
+}
+
+func fetchEtaRequestToAnalyticsEvent(eventType constants.EventType, request *types.FetchEtaRequest, response []types.FetchEtaResponse, fetchErr error) types.FetchEtaAnalyticsEvent {
+	event := types.FetchEtaAnalyticsEvent{
+		EventId:   uuid.New().String(),
+		CreatedAt: time.Now().UnixMilli(),
+		EventType: eventType,
+		Status:    "SUCCESS",
+		Response:  response,
+	}
+
+	if request != nil {
+		event.RequestId = request.RequestId
+		event.Surface = request.Surface
+		event.DeliveryType = request.DeliveryType
+		event.Request = *request
+	}
+
+	if fetchErr != nil {
+		event.Status = "ERROR"
+		event.ErrorMessage = fetchErr.Error()
+	}
+
+	return event
 }
