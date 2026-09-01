@@ -61,7 +61,6 @@ externalServices:
   
 eta:
   maxEntities: 100
-  legacyEtaBufferInSeconds: 300
 
 kafka:
   isProducerHealthCheckEnabled: true

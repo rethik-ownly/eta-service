@@ -61,7 +61,6 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	if err != nil {
 		err = fmt.Errorf("Fetching restaurant estimates failed : %w", err)
 		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeLegacyEta, request, nil, err)
 		return nil, err
 	}
 
@@ -78,7 +77,6 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	if err != nil {
 		err = fmt.Errorf("Fetching sublocality estimates failed : %w", err)
 		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeLegacyEta, request, nil, err)
 		return nil, err
 	}
 
@@ -101,12 +99,10 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	if err != nil {
 		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeLegacyEta, request, nil, err)
 		return nil, err
 	}
 
 	var response []types.FetchEtaResponse
-	var legacyResponse []types.FetchEtaResponse
 	for index, value := range request.Entities {
 		restaurantEstimates, ok := estimatesByRestaurant[value.RestaurantID]
 		if !ok {
@@ -130,22 +126,9 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 			EtaInSeconds: uint(etaInSeconds),
 			//TODO: displayMin, displayMax ( what to do if 2 min ? )
 		})
-
-		legacyEta, legacyMin, legacyMax := calculateLegacyEta(
-			restSection.Rat.Seconds, restSection.Kpt.Seconds,
-			subSection.Cat.Seconds, subSection.Fm.Seconds, restSection.Pickup.Seconds,
-			lastMile, s.config.Eta.LegacyEtaBufferInSeconds,
-		)
-		legacyResponse = append(legacyResponse, types.FetchEtaResponse{
-			RestaurantID: restaurantEstimates.RestaurantId,
-			EtaInSeconds: legacyEta,
-			DisplayMin:   legacyMin,
-			DisplayMax:   legacyMax,
-		})
 	}
 
 	s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, response, nil)
-	s.repository.PublishFetchEtaEvent(constants.EventTypeLegacyEta, request, legacyResponse, nil)
 	return response, nil
 }
 

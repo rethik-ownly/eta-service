@@ -117,10 +117,9 @@ func (q QosLevel) IsValid() bool {
 	}
 }
 
-// EventType tags which formula produced a FetchEta analytics event.
+// EventType tags a FetchEta analytics event.
 type EventType string
 
 const (
-	EventTypeNewEta    EventType = "NEW_ETA"
-	EventTypeLegacyEta EventType = "LEGACY_ETA"
+	EventTypeNewEta EventType = "NEW_ETA"
 )
