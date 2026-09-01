@@ -31,11 +31,13 @@ const (
 	Friday    Day = "FRIDAY"
 	Saturday  Day = "SATURDAY"
 	Sunday    Day = "SUNDAY"
+	Weekday	  Day = "WEEKDAY"
+	Weekend   Day = "WEEKEND"
 )
 
 func (d Day) IsValid() bool {
 	switch d {
-	case Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday:
+	case Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Weekday, Weekend:
 		return true
 	default:
 		return false

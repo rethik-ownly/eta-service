@@ -119,7 +119,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
 
-		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds) + lastMile
+		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds+restSection.DelayDispatch.Seconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
 			RestaurantID: restaurantEstimates.RestaurantId,

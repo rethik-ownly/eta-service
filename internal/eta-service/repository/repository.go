@@ -252,6 +252,12 @@ func (r *repositoryImpl) UpdateRestaurantEstimates(restaurantId string, request 
 		if request.PickupSampleCount != nil {
 			set[prefix+".pickup.sampleCount"] = *request.PickupSampleCount
 		}
+		if request.DelayDispatchSeconds != nil {
+			set[prefix+".delayDispatch.seconds"] = *request.DelayDispatchSeconds
+		}
+		if request.DelayDispatchSampleCount != nil {
+			set[prefix+".delayDispatch.sampleCount"] = *request.DelayDispatchSampleCount
+		}
 	}
 
 	_, err := r.mongoRepository.UpdateOne(constants.ETA_RESTAURANT_ESTIMATES, filter, bson.M{"$set": set}, nil)

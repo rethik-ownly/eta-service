@@ -145,13 +145,14 @@ func (v *validatorImpl) ValidateUpdateRestaurantEstimates(restaurantId string, r
 
 	hasMealFieldUpdate := request.RatSeconds != nil || request.RatSampleCount != nil ||
 		request.KptSeconds != nil || request.KptSampleCount != nil ||
-		request.PickupSeconds != nil || request.PickupSampleCount != nil
+		request.PickupSeconds != nil || request.PickupSampleCount != nil ||
+		request.DelayDispatchSeconds != nil || request.DelayDispatchSampleCount != nil
 
 	if request.MealType != "" && !request.MealType.IsValid() {
 		return types.NewBadRequestError("invalid mealType")
 	}
 	if hasMealFieldUpdate && request.MealType == "" {
-		return types.NewBadRequestError("mealType is required to update rat/kpt/pickup fields")
+		return types.NewBadRequestError("mealType is required to update rat/kpt/pickup/delayDispatch fields")
 	}
 
 	if request.RatSeconds != nil && *request.RatSeconds < 0 {
@@ -171,6 +172,12 @@ func (v *validatorImpl) ValidateUpdateRestaurantEstimates(restaurantId string, r
 	}
 	if request.PickupSampleCount != nil && *request.PickupSampleCount < 0 {
 		return types.NewBadRequestError("invalid pickupSampleCount")
+	}
+	if request.DelayDispatchSeconds != nil && *request.DelayDispatchSeconds < 0 {
+		return types.NewBadRequestError("invalid delayDispatchSeconds")
+	}
+	if request.DelayDispatchSampleCount != nil && *request.DelayDispatchSampleCount < 0 {
+		return types.NewBadRequestError("invalid delayDispatchSampleCount")
 	}
 	if request.CityId != nil && *request.CityId == "" {
 		return types.NewBadRequestError("invalid cityId")
@@ -244,6 +251,9 @@ func validateRestaurantMealEstimate(estimate types.RestaurantMealEstimate) error
 	}
 	if estimate.Pickup.Seconds < 0 || estimate.Pickup.SampleCount < 0 {
 		return types.NewBadRequestError("invalid pickup estimate")
+	}
+	if estimate.DelayDispatch.Seconds < 0 || estimate.DelayDispatch.SampleCount < 0 {
+		return types.NewBadRequestError("invalid delayDispatch estimate")
 	}
 	return nil
 }

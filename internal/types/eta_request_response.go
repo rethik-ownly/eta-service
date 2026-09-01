@@ -78,7 +78,7 @@ type InsertSublocalityEstimateRequest struct {
 //
 // Day locates the existing document (it must be present in the document's
 // dayType array); Update never creates a document. MealType is only
-// required when patching one of the nested Rat/Kpt/Pickup sections. Days,
+// required when patching one of the nested Rat/Kpt/Pickup/DelayDispatch sections. Days,
 // if provided, replaces the whole dayType array (e.g. to add another day to
 // this same document).
 type UpdateRestaurantEstimateRequest struct {
@@ -92,12 +92,14 @@ type UpdateRestaurantEstimateRequest struct {
 	ZoneId        *string          `json:"zoneId,omitempty"`
 	SublocalityId *string          `json:"sublocalityId,omitempty"`
 
-	RatSeconds        *float64 `json:"ratSeconds,omitempty"`
-	RatSampleCount    *int     `json:"ratSampleCount,omitempty"`
-	KptSeconds        *float64 `json:"kptSeconds,omitempty"`
-	KptSampleCount    *int     `json:"kptSampleCount,omitempty"`
-	PickupSeconds     *float64 `json:"pickupSeconds,omitempty"`
-	PickupSampleCount *int     `json:"pickupSampleCount,omitempty"`
+	RatSeconds               *float64 `json:"ratSeconds,omitempty"`
+	RatSampleCount           *int     `json:"ratSampleCount,omitempty"`
+	KptSeconds               *float64 `json:"kptSeconds,omitempty"`
+	KptSampleCount           *int     `json:"kptSampleCount,omitempty"`
+	PickupSeconds            *float64 `json:"pickupSeconds,omitempty"`
+	PickupSampleCount        *int     `json:"pickupSampleCount,omitempty"`
+	DelayDispatchSeconds     *float64 `json:"delayDispatchSeconds,omitempty"`
+	DelayDispatchSampleCount *int     `json:"delayDispatchSampleCount,omitempty"`
 
 	UpdatedAt float64 `json:"-"`
 }
