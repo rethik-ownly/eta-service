@@ -3,6 +3,7 @@ module github.com/nutanalabs/eta-service
 go 1.25.0
 
 require (
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/wire v0.7.0
 	github.com/nutanalabs/rapido-http-go/v3 v3.3.0

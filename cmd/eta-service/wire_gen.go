@@ -9,6 +9,7 @@ package main
 import (
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/dataclients"
+	"github.com/nutanalabs/eta-service/internal/dataclients/kafka"
 	"github.com/nutanalabs/eta-service/internal/dataclients/mongo"
 	"github.com/nutanalabs/eta-service/internal/eta-service"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
@@ -37,7 +38,11 @@ func InitDependencies() (ServerDependencies, error) {
 	httpUtils := utils2.NewHttpUtils()
 	validatorValidator := validator.NewValidator(configConfig)
 	handler := etaservice.NewHandler(serviceService, httpUtils, validatorValidator)
-	dataClients := dataclients.NewDataClients(configConfig, client)
+	producerClient, err := kafka.NewKafkaProducerClient(configConfig)
+	if err != nil {
+		return ServerDependencies{}, err
+	}
+	dataClients := dataclients.NewDataClients(configConfig, client, producerClient)
 	healthHandler := health.NewHandler(dataClients)
 	handlers := server.Handlers{
 		ETAHandler:    handler,

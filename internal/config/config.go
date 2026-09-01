@@ -18,6 +18,7 @@ type Config struct {
 	HTTPTransport HTTPTransportConfig `json:"http_transport"`
 	ExternalServices ExternalServicesConfig `mapstructure:"externalServices"`
 	Eta		EtaConfig   `json:"eta" mapstructure:"eta"`
+	Kafka	KafkaConfig `json:"kafka" mapstructure:"kafka"`
 }
 
 func InitDefaultConfig() *Config {
