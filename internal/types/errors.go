@@ -40,6 +40,46 @@ func NewConflictError(displayMessage string) *HTTPStatusError {
 	}
 }
 
+func NewUnAuthorizedError(displayMessage string) *HTTPStatusError {
+	return &HTTPStatusError{
+		Message: "unauthorized",
+		DisplayMessage: displayMessage,
+		Code: strconv.Itoa(http.StatusUnauthorized),
+	}
+}
+
+func NewForbiddenError(displayMessage string) *HTTPStatusError {
+	return &HTTPStatusError{
+		Message:        "forbidden",
+		DisplayMessage: displayMessage,
+		Code:           strconv.Itoa(http.StatusForbidden),
+	}
+}
+
+func NewTooManyRequestsError(displayMessage string) *HTTPStatusError {
+	return &HTTPStatusError{
+		Message:        "too many requests",
+		DisplayMessage: displayMessage,
+		Code:           strconv.Itoa(http.StatusTooManyRequests),
+	}
+}
+
+func NewGoneError(displayMessage string) *HTTPStatusError {
+	return &HTTPStatusError{
+		Message:        "gone",
+		DisplayMessage: displayMessage,
+		Code:           strconv.Itoa(http.StatusGone),
+	}
+}
+
+func NewNoResultsFoundRequestError(displayMessage string) *HTTPStatusError {
+	return &HTTPStatusError{
+		Message: "no results found",
+		DisplayMessage: displayMessage,
+		Code: strconv.Itoa(http.StatusNotFound),
+	}
+}
+
 // StatusCode returns the numeric HTTP status code for this error, defaulting
 // to 500 if Code is missing or unparsable.
 func (e *HTTPStatusError) StatusCode() int {

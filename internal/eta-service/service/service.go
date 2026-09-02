@@ -59,7 +59,9 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	restaurantsEstimates, err := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
 
 	if err != nil {
-		return nil, fmt.Errorf("Fetching restaurant estimates failed : %w", err)
+		err = fmt.Errorf("Fetching restaurant estimates failed : %w", err)
+		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
+		return nil, err
 	}
 
 	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates, len(restaurantsEstimates))
@@ -73,7 +75,9 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	sublocalitiesEstimates, err := s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
 
 	if err != nil {
-		return nil, fmt.Errorf("Fetching sublocality estimates failed : %w", err)
+		err = fmt.Errorf("Fetching sublocality estimates failed : %w", err)
+		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
+		return nil, err
 	}
 
 	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates, len(sublocalitiesEstimates))
@@ -94,6 +98,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	distanceMatrixResponse, err := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
 
 	if err != nil {
+		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
 		return nil, err
 	}
 
@@ -114,7 +119,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
 
-		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds) + lastMile
+		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds+restSection.DelayDispatch.Seconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
 			RestaurantID: restaurantEstimates.RestaurantId,
@@ -123,6 +128,7 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 		})
 	}
 
+	s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, response, nil)
 	return response, nil
 }
 

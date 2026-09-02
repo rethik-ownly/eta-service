@@ -15,9 +15,10 @@ type TimeSample struct {
 // RestaurantMealEstimate is the nested per-meal-type section stored under
 // each of breakfast/lunch/snacks/dinner/latenight in EtaRestaurantEstimates.
 type RestaurantMealEstimate struct {
-	Rat    TimeSample `json:"rat" bson:"rat"`
-	Kpt    TimeSample `json:"kpt" bson:"kpt"`
-	Pickup TimeSample `json:"pickup" bson:"pickup"`
+	Rat           TimeSample `json:"rat" bson:"rat"`
+	Kpt           TimeSample `json:"kpt" bson:"kpt"`
+	Pickup        TimeSample `json:"pickup" bson:"pickup"`
+	DelayDispatch TimeSample `json:"delayDispatch" bson:"delayDispatch"`
 }
 
 // SublocalityMealEstimate is the nested per-meal-type section stored under
@@ -46,7 +47,7 @@ type EtaRestaurantEstimates struct {
 	UpdatedAt     float64                `json:"updatedAt,omitempty" bson:"updatedAt"`
 }
 
-// MealSection returns the nested rat/kpt/pickup section matching mealType.
+// MealSection returns the nested rat/kpt/pickup/delayDispatch section matching mealType.
 func (e *EtaRestaurantEstimates) MealSection(mealType constants.MealType) RestaurantMealEstimate {
 	switch mealType {
 	case constants.Breakfast:

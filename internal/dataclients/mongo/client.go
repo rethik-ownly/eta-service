@@ -68,6 +68,10 @@ func (c *clientImpl) CheckHealth() error {
 		})
 		return err
 	}
+	logger.Debug(logger.Format{
+		Event: "MONGO_DB_HEALTH_CHECK",
+		Message: "mongoDB health check is successful",
+	})
 	return nil
 }
 

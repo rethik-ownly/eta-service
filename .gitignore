@@ -10,3 +10,9 @@ eta-service-request
 seed.js
 
 out/
+
+scripts/
+
+docker-compose.kafka.yml
+
+*.csv

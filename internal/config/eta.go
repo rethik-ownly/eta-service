@@ -3,5 +3,5 @@ package config
 
 type EtaConfig struct {
 	// Max number of entities allowed in fetch Eta request body
-	MaxEntities int
+	MaxEntities int `mapstructure:"maxEntities"`
 }

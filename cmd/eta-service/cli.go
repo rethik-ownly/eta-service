@@ -10,10 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 func initCLI() *cobra.Command {
-	rootCmd := &cobra.Command {
-		Use: "eta-service",
+	rootCmd := &cobra.Command{
+		Use:   "eta-service",
 		Short: "A CLI for the ETA service",
 	}
 
@@ -23,8 +22,8 @@ func initCLI() *cobra.Command {
 }
 
 func startCommand() *cobra.Command {
-	return &cobra.Command {
-		Use: "start",
+	return &cobra.Command{
+		Use:   "start",
 		Short: "Starts the ETA service",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Initialize the config
@@ -36,7 +35,7 @@ func startCommand() *cobra.Command {
 			logger.Init(cfg.Log.Level)
 
 			// Dependecy injection
-			serverDependecies , _ := InitDependencies()
+			serverDependecies, _ := InitDependencies()
 
 			serverDependecies.server.Run(serverDependecies.handlers)
 		},
