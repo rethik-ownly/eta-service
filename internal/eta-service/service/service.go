@@ -55,39 +55,36 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	batchSize := s.config.Mongo.QueryBatchSize
 
-	// Fetching restaurant_Estimates By ID's
-	restaurantsEstimates, err := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
+	restaurantsEstimates, restaurantMongoErr := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
+	restaurantMongoFailed := restaurantMongoErr != nil
 
-	if err != nil {
-		err = fmt.Errorf("Fetching restaurant estimates failed : %w", err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		return nil, err
+	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates)
+	if !restaurantMongoFailed {
+		for _, e := range restaurantsEstimates {
+			estimatesByRestaurant[e.RestaurantId] = e
+		}
 	}
 
-	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates, len(restaurantsEstimates))
-	for _, e := range restaurantsEstimates {
-		estimatesByRestaurant[e.RestaurantId] = e
+	var sublocalitiesEstimates []types.EtaSublocalityEstimates
+	sublocalityMongoFailed := false
+	if !restaurantMongoFailed {
+		uniqueSublocalitesID := getUniqueSublocalitiesId(restaurantsEstimates)
+		var sublocalityMongoErr error
+		sublocalitiesEstimates, sublocalityMongoErr = s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
+		sublocalityMongoFailed = sublocalityMongoErr != nil
+	} else {
+		sublocalityMongoFailed = true
 	}
 
-	// Fetching sublocality_estimates by ID's
-	uniqueSublocalitesID := getUniqueSublocalitiesId(restaurantsEstimates)
-
-	sublocalitiesEstimates, err := s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
-
-	if err != nil {
-		err = fmt.Errorf("Fetching sublocality estimates failed : %w", err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		return nil, err
-	}
-
-	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates, len(sublocalitiesEstimates))
-	for _, e := range sublocalitiesEstimates {
-		estimatesBySublocality[e.SublocalityId] = e
+	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates)
+	if !sublocalityMongoFailed {
+		for _, e := range sublocalitiesEstimates {
+			estimatesBySublocality[e.SublocalityId] = e
+		}
 	}
 
 	// TODO : If-else based on surface
 
-	// Calculating distance matrix
 	distanceMatrixRequest := routingengine.DistanceMatrixRequest{
 		Sources:           sources,
 		Destinations:      []types.Location{request.UserLocation},
@@ -104,27 +101,25 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	var response []types.FetchEtaResponse
 	for index, value := range request.Entities {
-		restaurantEstimates, ok := estimatesByRestaurant[value.RestaurantID]
-		if !ok {
-			continue
+		restSection, restUsedFallback := s.resolveRestaurantFood(value.RestaurantID, mealType, estimatesByRestaurant, restaurantMongoFailed)
+
+		sublocalityID := ""
+		if !restaurantMongoFailed {
+			if restaurantEstimates, ok := estimatesByRestaurant[value.RestaurantID]; ok {
+				sublocalityID = restaurantEstimates.SublocalityId
+			}
 		}
 
-		sublocalityEstimates, ok := estimatesBySublocality[restaurantEstimates.SublocalityId]
-		if !ok {
-			continue
-		}
-
-		restSection := restaurantEstimates.MealSection(mealType)
-		subSection := sublocalityEstimates.MealSection(mealType)
+		subSection, subUsedFallback := s.resolveSublocalityFood(sublocalityID, mealType, estimatesBySublocality, sublocalityMongoFailed)
 
 		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
 
 		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds+restSection.DelayDispatch.Seconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
-			RestaurantID: restaurantEstimates.RestaurantId,
+			RestaurantID: value.RestaurantID,
 			EtaInSeconds: uint(etaInSeconds),
-			//TODO: displayMin, displayMax ( what to do if 2 min ? )
+			Source:       etaSourceFromFallback(restUsedFallback || subUsedFallback),
 		})
 	}
 

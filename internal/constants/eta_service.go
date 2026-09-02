@@ -125,3 +125,9 @@ type EventType string
 const (
 	EventTypeNewEta EventType = "NEW_ETA"
 )
+
+// Fetch ETA data source.
+const (
+	EtaSourceHistoric  = "historic"
+	EtaSourceFallback  = "fallback"
+)
