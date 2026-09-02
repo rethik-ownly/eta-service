@@ -81,7 +81,6 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	resp, err := h.service.FetchEta(&fetchEtaRequest)
 
 	if err != nil {
-
 		logger.Error(logger.Format{
 			Event:   "FETCH_ETA_SERVICE_ERROR",
 			Message: "failed to fetch eta",
@@ -91,8 +90,8 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		// TOdo : Resolve Error
-		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		statusCode, httpErr := httpUtils.ResolveHTTPStatusError(err, "something went wrong. Try again")
+		ctx.JSON(statusCode, h.httpUtils.BuildErrorResponse(httpErr))
 		return
 	}
 
@@ -144,8 +143,8 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		statusErr := types.ToHTTPStatusError(err)
-		ctx.JSON(statusErr.StatusCode(), h.httpUtils.BuildErrorResponse(statusErr))
+		statusCode, httpErr := httpUtils.ResolveHTTPStatusError(err, "something went wrong. Try again")
+		ctx.JSON(statusCode, h.httpUtils.BuildErrorResponse(httpErr))
 		return
 	}
 
@@ -199,8 +198,8 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		statusErr := types.ToHTTPStatusError(err)
-		ctx.JSON(statusErr.StatusCode(), h.httpUtils.BuildErrorResponse(statusErr))
+		statusCode, httpErr := httpUtils.ResolveHTTPStatusError(err, "something went wrong. Try again")
+		ctx.JSON(statusCode, h.httpUtils.BuildErrorResponse(httpErr))
 		return
 	}
 
@@ -255,8 +254,8 @@ func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		// TOdo : Resolve Error
-		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		statusCode, httpErr := httpUtils.ResolveHTTPStatusError(err, "something went wrong. Try again")
+		ctx.JSON(statusCode, h.httpUtils.BuildErrorResponse(httpErr))
 		return
 	}
 
@@ -311,8 +310,8 @@ func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
-		// TOdo : Resolve Error
-		ctx.JSON(http.StatusInternalServerError, h.httpUtils.BuildErrorResponse(types.NewInternalServerError(err.Error())))
+		statusCode, httpErr := httpUtils.ResolveHTTPStatusError(err, "something went wrong. Try again")
+		ctx.JSON(statusCode, h.httpUtils.BuildErrorResponse(httpErr))
 		return
 	}
 

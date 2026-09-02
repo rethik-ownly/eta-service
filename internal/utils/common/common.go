@@ -23,24 +23,25 @@ func NewCommonUtils() CommonUtils {
 }
 
 func (c *commonUtilImpl) GetDayFromTime(t time.Time) constants.Day {
-	switch t.Weekday() {
-    case time.Monday:
-        return constants.Monday
-    case time.Tuesday:
-        return constants.Tuesday
-    case time.Wednesday:
-        return constants.Wednesday
-    case time.Thursday:
-        return constants.Thursday
-    case time.Friday:
-        return constants.Friday
-    case time.Saturday:
-        return constants.Saturday
-    case time.Sunday:
-        return constants.Sunday
-	default:
-        return constants.Monday
-    }
+    return constants.Weekday
+	// switch t.Weekday() {
+    // case time.Monday:
+    //     return constants.Monday
+    // case time.Tuesday:
+    //     return constants.Tuesday
+    // case time.Wednesday:
+    //     return constants.Wednesday
+    // case time.Thursday:
+    //     return constants.Thursday
+    // case time.Friday:
+    //     return constants.Friday
+    // case time.Saturday:
+    //     return constants.Saturday
+    // case time.Sunday:
+    //     return constants.Sunday
+	// default:
+    //     return constants.Monday
+    // }
 }
 
 func (c *commonUtilImpl) GetMealTypeFromTime(t time.Time) constants.MealType {

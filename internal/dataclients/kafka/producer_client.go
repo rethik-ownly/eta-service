@@ -48,6 +48,10 @@ func (p *producerClientImpl) CheckHealth() error {
 		})
 		return errors.New("kafkaProducerHealthCheckError")
 	}
+	logger.Debug(logger.Format{
+		Event: "KAFKA_HEALTH_CHECK",
+		Message: "kafka health check is successful",
+	})
 	return nil
 }
 
