@@ -57,8 +57,6 @@ func (rec *routingEngineClientImpl) GetDistanceMatrixWithQoS(request *DistanceMa
 		rec.config.ExternalServices.RoutingEngine.DistanceMatrixAPI.Path,
 		string(qos))
 
-	// fmt.Println(routingEngineURL)
-
 	requestBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)

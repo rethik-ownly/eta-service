@@ -27,7 +27,6 @@ func InitDefaultConfig() *Config {
 }
 
 func InitConfig(configFile string) *Config {
-	// fmt.Println(configFile)
 	viper.AutomaticEnv()
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
@@ -48,8 +47,6 @@ func InitConfig(configFile string) *Config {
 		logger.Error(logger.Format{Message: fmt.Sprintf("Cannot unmarshal the config File: %s", err)})
 		panic(err)
 	}
-
-	// fmt.Println(AppConfig)
 
 	return &AppConfig
 }
