@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	logger "github.com/nutanalabs/rapido-logger-go"
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
@@ -83,8 +84,6 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 		}
 	}
 
-	// TODO : If-else based on surface
-
 	distanceMatrixRequest := routingengine.DistanceMatrixRequest{
 		Sources:           sources,
 		Destinations:      []types.Location{request.UserLocation},
@@ -92,12 +91,8 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 		RoutingPreference: constants.ROUTING_PREFERENCE_TRAFFIC_AWARE,
 	}
 
-	distanceMatrixResponse, err := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
-
-	if err != nil {
-		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		return nil, err
-	}
+	distanceMatrixResponse, routingClientErr := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
+	routingClientFailed := routingClientErr != nil
 
 	var response []types.FetchEtaResponse
 	for index, value := range request.Entities {
@@ -112,14 +107,20 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 		subSection, subUsedFallback := s.resolveSublocalityFood(sublocalityID, mealType, estimatesBySublocality, sublocalityMongoFailed)
 
-		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
-
+		var lastMile float64 
+		if routingClientFailed {
+			haversineDistance := s.commonUtils.GetHaversineDistance(request.UserLocation.Lat, request.UserLocation.Lng, value.RestaurantLocation.Lat, value.RestaurantLocation.Lng)
+			lastMile = haversineDistance / constants.HF_SPEED
+		}else {
+			lastMile = distanceMatrixResponse.Data[index][0].Duration.Value
+		}
+		
 		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds+restSection.DelayDispatch.Seconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
 			RestaurantID: value.RestaurantID,
 			EtaInSeconds: uint(etaInSeconds),
-			Source:       etaSourceFromFallback(restUsedFallback || subUsedFallback),
+			Source:       etaSourceFromFallback(restUsedFallback || subUsedFallback || routingClientFailed),
 		})
 	}
 
@@ -194,10 +195,21 @@ func (s *serviceImpl) getDistanceMatrix(qosLevel constants.QosLevel, distanceMat
 	}
 
 	if err != nil {
+		logger.Warn(logger.Format{
+			Event:   "CALCULATE_ETA_DISTANCE",
+			Message: "Distance matrix API failed, falling back to Haversine",
+			Data: map[string]string{
+				"error": err.Error(),
+			},
+		})
 		return nil, fmt.Errorf("distance matrix API call failed: %w", err)
 	}
 
 	if len(distanceMatrixResponse.Data) == 0 || len(distanceMatrixResponse.Data) != len(distanceMatrixRequest.Sources) {
+		logger.Warn(logger.Format{
+			Event:   "CALCULATE_ETA_DISTANCE",
+			Message: "invalid response from distance matrix API, falling back to Haversine",
+		})
 		return nil, fmt.Errorf("invalid response from distance matrix API: expected %d sources, got %d", len(distanceMatrixRequest.Sources), len(distanceMatrixResponse.Data))
 	}
 	return distanceMatrixResponse, nil
