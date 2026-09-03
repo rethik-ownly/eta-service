@@ -33,6 +33,7 @@ type FetchEtaRequest struct {
 type FetchEtaResponse struct {
 	RestaurantID string `json:"restaurantId"`
 	EtaInSeconds uint   `json:"etaInSeconds"`
+	Source       string `json:"source"`
 	DisplayMin   uint   `json:"displayMin,omitempty"`
 	DisplayMax   uint   `json:"displayMax,omitempty"`
 }

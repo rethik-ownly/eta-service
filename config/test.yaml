@@ -74,3 +74,11 @@ kafka:
   lingerIntervalInMs: 0
   batchSizeInBytes: 1048576
   shadowEventsEnabled: true
+
+etaDefaultEstimates:
+  restaurantAcceptanceTime: 300
+  captainAssignmentTime: 180
+  firstMileTime: 300
+  delayDispatchTime: 0
+  kitchenPreparationTime: 900
+  pickupTime: 600

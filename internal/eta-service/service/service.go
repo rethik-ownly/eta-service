@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	logger "github.com/nutanalabs/rapido-logger-go"
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
@@ -55,39 +56,34 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	batchSize := s.config.Mongo.QueryBatchSize
 
-	// Fetching restaurant_Estimates By ID's
-	restaurantsEstimates, err := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
+	restaurantsEstimates, restaurantMongoErr := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
+	restaurantMongoFailed := restaurantMongoErr != nil
 
-	if err != nil {
-		err = fmt.Errorf("Fetching restaurant estimates failed : %w", err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		return nil, err
+	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates)
+	if !restaurantMongoFailed {
+		for _, e := range restaurantsEstimates {
+			estimatesByRestaurant[e.RestaurantId] = e
+		}
 	}
 
-	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates, len(restaurantsEstimates))
-	for _, e := range restaurantsEstimates {
-		estimatesByRestaurant[e.RestaurantId] = e
+	var sublocalitiesEstimates []types.EtaSublocalityEstimates
+	sublocalityMongoFailed := false
+	if !restaurantMongoFailed {
+		uniqueSublocalitesID := getUniqueSublocalitiesId(restaurantsEstimates)
+		var sublocalityMongoErr error
+		sublocalitiesEstimates, sublocalityMongoErr = s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
+		sublocalityMongoFailed = sublocalityMongoErr != nil
+	} else {
+		sublocalityMongoFailed = true
 	}
 
-	// Fetching sublocality_estimates by ID's
-	uniqueSublocalitesID := getUniqueSublocalitiesId(restaurantsEstimates)
-
-	sublocalitiesEstimates, err := s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
-
-	if err != nil {
-		err = fmt.Errorf("Fetching sublocality estimates failed : %w", err)
-		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		return nil, err
+	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates)
+	if !sublocalityMongoFailed {
+		for _, e := range sublocalitiesEstimates {
+			estimatesBySublocality[e.SublocalityId] = e
+		}
 	}
 
-	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates, len(sublocalitiesEstimates))
-	for _, e := range sublocalitiesEstimates {
-		estimatesBySublocality[e.SublocalityId] = e
-	}
-
-	// TODO : If-else based on surface
-
-	// Calculating distance matrix
 	distanceMatrixRequest := routingengine.DistanceMatrixRequest{
 		Sources:           sources,
 		Destinations:      []types.Location{request.UserLocation},
@@ -95,36 +91,36 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 		RoutingPreference: constants.ROUTING_PREFERENCE_TRAFFIC_AWARE,
 	}
 
-	distanceMatrixResponse, err := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
-
-	if err != nil {
-		s.repository.PublishFetchEtaEvent(constants.EventTypeNewEta, request, nil, err)
-		return nil, err
-	}
+	distanceMatrixResponse, routingClientErr := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
+	routingClientFailed := routingClientErr != nil
 
 	var response []types.FetchEtaResponse
 	for index, value := range request.Entities {
-		restaurantEstimates, ok := estimatesByRestaurant[value.RestaurantID]
-		if !ok {
-			continue
+		restSection, restUsedFallback := s.resolveRestaurantFood(value.RestaurantID, mealType, estimatesByRestaurant, restaurantMongoFailed)
+
+		sublocalityID := ""
+		if !restaurantMongoFailed {
+			if restaurantEstimates, ok := estimatesByRestaurant[value.RestaurantID]; ok {
+				sublocalityID = restaurantEstimates.SublocalityId
+			}
 		}
 
-		sublocalityEstimates, ok := estimatesBySublocality[restaurantEstimates.SublocalityId]
-		if !ok {
-			continue
+		subSection, subUsedFallback := s.resolveSublocalityFood(sublocalityID, mealType, estimatesBySublocality, sublocalityMongoFailed)
+
+		var lastMile float64 
+		if routingClientFailed {
+			haversineDistance := s.commonUtils.GetHaversineDistance(request.UserLocation.Lat, request.UserLocation.Lng, value.RestaurantLocation.Lat, value.RestaurantLocation.Lng)
+			lastMile = haversineDistance / constants.HF_SPEED
+		}else {
+			lastMile = distanceMatrixResponse.Data[index][0].Duration.Value
 		}
-
-		restSection := restaurantEstimates.MealSection(mealType)
-		subSection := sublocalityEstimates.MealSection(mealType)
-
-		lastMile := distanceMatrixResponse.Data[index][0].Duration.Value
-
+		
 		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds+restSection.DelayDispatch.Seconds) + lastMile
 
 		response = append(response, types.FetchEtaResponse{
-			RestaurantID: restaurantEstimates.RestaurantId,
+			RestaurantID: value.RestaurantID,
 			EtaInSeconds: uint(etaInSeconds),
-			//TODO: displayMin, displayMax ( what to do if 2 min ? )
+			Source:       etaSourceFromFallback(restUsedFallback || subUsedFallback || routingClientFailed),
 		})
 	}
 
@@ -199,10 +195,21 @@ func (s *serviceImpl) getDistanceMatrix(qosLevel constants.QosLevel, distanceMat
 	}
 
 	if err != nil {
+		logger.Warn(logger.Format{
+			Event:   "CALCULATE_ETA_DISTANCE",
+			Message: "Distance matrix API failed, falling back to Haversine",
+			Data: map[string]string{
+				"error": err.Error(),
+			},
+		})
 		return nil, fmt.Errorf("distance matrix API call failed: %w", err)
 	}
 
 	if len(distanceMatrixResponse.Data) == 0 || len(distanceMatrixResponse.Data) != len(distanceMatrixRequest.Sources) {
+		logger.Warn(logger.Format{
+			Event:   "CALCULATE_ETA_DISTANCE",
+			Message: "invalid response from distance matrix API, falling back to Haversine",
+		})
 		return nil, fmt.Errorf("invalid response from distance matrix API: expected %d sources, got %d", len(distanceMatrixRequest.Sources), len(distanceMatrixResponse.Data))
 	}
 	return distanceMatrixResponse, nil

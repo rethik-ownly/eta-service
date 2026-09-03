@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/nutanalabs/eta-service/internal/constants"
@@ -12,8 +13,9 @@ import (
 type CommonUtils interface {
 	GetDayFromTime(t time.Time) constants.Day
 	GetMealTypeFromTime(t time.Time) constants.MealType
-
     ToJSON(data interface{}) string
+
+    GetHaversineDistance(lat1, lng1, lat2, lng2 float64) float64 
 }
 
 type commonUtilImpl struct {}
@@ -23,25 +25,24 @@ func NewCommonUtils() CommonUtils {
 }
 
 func (c *commonUtilImpl) GetDayFromTime(t time.Time) constants.Day {
-    return constants.Weekday
-	// switch t.Weekday() {
-    // case time.Monday:
-    //     return constants.Monday
-    // case time.Tuesday:
-    //     return constants.Tuesday
-    // case time.Wednesday:
-    //     return constants.Wednesday
-    // case time.Thursday:
-    //     return constants.Thursday
-    // case time.Friday:
-    //     return constants.Friday
-    // case time.Saturday:
-    //     return constants.Saturday
-    // case time.Sunday:
-    //     return constants.Sunday
-	// default:
-    //     return constants.Monday
-    // }
+	switch t.Weekday() {
+    case time.Monday:
+        return constants.Monday
+    case time.Tuesday:
+        return constants.Tuesday
+    case time.Wednesday:
+        return constants.Wednesday
+    case time.Thursday:
+        return constants.Thursday
+    case time.Friday:
+        return constants.Friday
+    case time.Saturday:
+        return constants.Saturday
+    case time.Sunday:
+        return constants.Sunday
+	default:
+        return constants.Monday
+    }
 }
 
 func (c *commonUtilImpl) GetMealTypeFromTime(t time.Time) constants.MealType {
@@ -69,4 +70,25 @@ func (c *commonUtilImpl) ToJSON(data interface{}) string {
 		return ""
 	}
 	return string(b)
+}
+
+// Lat, lng in degree and output is distance in km
+func (c *commonUtilImpl) GetHaversineDistance(lat1, lng1, lat2, lng2 float64) float64 {
+    const EarthRadius = 6371
+
+	toRad := func(deg float64) float64 {
+		return deg * math.Pi / 180
+	}
+
+	deltaLat := toRad(lat2 - lat1)
+	deltaLng := toRad(lng2 - lng1)
+
+	lat1Rad := toRad(lat1)
+	lat2Rad := toRad(lat2)
+
+	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
+		    math.Cos(lat1Rad)*math.Cos(lat2Rad)*math.Sin(deltaLng/2)*math.Sin(deltaLng/2)
+
+	d := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return EarthRadius * d
 }

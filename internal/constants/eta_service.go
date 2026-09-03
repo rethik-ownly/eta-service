@@ -1,5 +1,8 @@
 package constants
 
+// Haversine fallback speed ( 10 km/hr = 10 / 3600 km/sec )
+const HF_SPEED = 10.00 / 3600.00 
+
 // Surface - Point of ingression
 type Surface string
 
@@ -124,4 +127,10 @@ type EventType string
 
 const (
 	EventTypeNewEta EventType = "NEW_ETA"
+)
+
+// Fetch ETA data source.
+const (
+	EtaSourceHistoric  = "historic"
+	EtaSourceFallback  = "fallback"
 )
