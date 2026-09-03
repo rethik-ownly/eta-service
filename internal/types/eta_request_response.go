@@ -39,10 +39,6 @@ type FetchEtaResponse struct {
 }
 
 // Insert Eta Request
-//
-// Insert creates a brand-new document covering the given set of days
-// (DayType/Day). It fails with a conflict if any of those days already
-// belong to another document for the same id (see service layer).
 type InsertRestaurantEstimateRequest struct {
 	RestaurantId  string          `json:"restaurantId"`
 	DayType       []constants.Day `json:"dayType"`
@@ -61,7 +57,7 @@ type InsertRestaurantEstimateRequest struct {
 
 type InsertSublocalityEstimateRequest struct {
 	SublocalityId string          `json:"sublocalityId"`
-	Day           []constants.Day `json:"day"`
+	DayType       []constants.Day `json:"dayType"`
 	ZoneId        string          `json:"zoneId,omitempty"`
 	CityId        string          `json:"cityId"`
 

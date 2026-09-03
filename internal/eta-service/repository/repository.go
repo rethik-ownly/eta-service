@@ -69,7 +69,7 @@ func (r *repositoryImpl) FetchRestaurantEstimates(restaurantId string, day const
 func (r *repositoryImpl) FetchSublocalityEstimates(sublocalityId string, day constants.Day, mealType constants.MealType) (*types.EtaSublocalityEstimates, error) {
 	filter := bson.M{
 		"sublocalityId": sublocalityId,
-		"day":           day,
+		"dayType":       day,
 	}
 	opts := options.FindOne().SetProjection(sublocalityMealProjection(mealType))
 
@@ -134,7 +134,7 @@ func (r *repositoryImpl) fetchSublocalityEstimatesByIDsBatch(sublocalitiesId []s
 		"sublocalityId": bson.M{
 			"$in": sublocalitiesId,
 		},
-		"day": day,
+		"dayType": day,
 	}
 	opts := options.Find().SetProjection(sublocalityMealProjection(mealType))
 
@@ -180,7 +180,7 @@ func (r *repositoryImpl) RestaurantDayOverlapExists(restaurantId string, days []
 func (r *repositoryImpl) SublocalityDayOverlapExists(sublocalityId string, days []constants.Day) (bool, error) {
 	filter := bson.M{
 		"sublocalityId": sublocalityId,
-		"day": bson.M{
+		"dayType": bson.M{
 			"$in": days,
 		},
 	}
@@ -270,14 +270,14 @@ func (r *repositoryImpl) UpdateRestaurantEstimates(restaurantId string, request 
 func (r *repositoryImpl) UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error {
 	filter := bson.M{
 		"sublocalityId": sublocalityId,
-		"day":           request.Day,
+		"dayType":       request.Day,
 	}
 
 	set := bson.M{
 		"updatedAt": request.UpdatedAt,
 	}
 	if request.Days != nil {
-		set["day"] = *request.Days
+		set["dayType"] = *request.Days
 	}
 	if request.ZoneId != nil {
 		set["zoneId"] = *request.ZoneId
@@ -387,7 +387,7 @@ func restaurantInsertRequestToEstimates(request *types.InsertRestaurantEstimateR
 func sublocalityInsertRequestToEstimates(request *types.InsertSublocalityEstimateRequest) *types.EtaSublocalityEstimates {
 	return &types.EtaSublocalityEstimates{
 		SublocalityId: request.SublocalityId,
-		Day:           request.Day,
+		DayType:       request.DayType,
 		ZoneId:        request.ZoneId,
 		CityId:        request.CityId,
 		Breakfast:     request.Breakfast,

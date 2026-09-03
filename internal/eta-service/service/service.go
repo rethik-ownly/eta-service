@@ -142,12 +142,12 @@ func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantE
 }
 
 func (s *serviceImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
-	overlaps, err := s.repository.SublocalityDayOverlapExists(request.SublocalityId, request.Day)
+	overlaps, err := s.repository.SublocalityDayOverlapExists(request.SublocalityId, request.DayType)
 	if err != nil {
 		return fmt.Errorf("checking existing sublocality estimate failed: %w", err)
 	}
 	if overlaps {
-		return types.NewConflictError(fmt.Sprintf("sublocality estimate already exists for one or more of sublocalityId=%s day=%v", request.SublocalityId, request.Day))
+		return types.NewConflictError(fmt.Sprintf("sublocality estimate already exists for one or more of sublocalityId=%s dayType=%v", request.SublocalityId, request.DayType))
 	}
 
 	request.UpdatedAt = float64(time.Now().Unix())

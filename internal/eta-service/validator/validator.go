@@ -99,12 +99,12 @@ func (v *validatorImpl) ValidateInsertSublocalityEstimateRequest(request *types.
 	if request.CityId == "" {
 		return types.NewBadRequestError("invalid cityId")
 	}
-	if len(request.Day) == 0 {
-		return types.NewBadRequestError("invalid day")
+	if len(request.DayType) == 0 {
+		return types.NewBadRequestError("invalid dayType")
 	}
-	for _, day := range request.Day {
+	for _, day := range request.DayType {
 		if !day.IsValid() {
-			return types.NewBadRequestError("invalid day")
+			return types.NewBadRequestError("invalid dayType")
 		}
 	}
 	if err := validateSublocalityMealEstimate(request.Breakfast); err != nil {
