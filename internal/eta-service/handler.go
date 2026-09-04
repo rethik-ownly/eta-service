@@ -3,10 +3,13 @@ package etaservice
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
 	"github.com/nutanalabs/eta-service/internal/eta-service/validator"
+	"github.com/nutanalabs/eta-service/internal/metrics"
 	"github.com/nutanalabs/eta-service/internal/types"
 	httpUtils "github.com/nutanalabs/eta-service/internal/utils/http"
 	logger "github.com/nutanalabs/rapido-logger-go"
@@ -16,17 +19,20 @@ type Handler struct {
 	service   service.Service
 	httpUtils httpUtils.HTTPUtils
 	validator validator.Validator
+	metrics   metrics.Metrics
 }
 
-func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils, validator validator.Validator) *Handler {
+func NewHandler(service service.Service, httpUtils httpUtils.HTTPUtils, validator validator.Validator, metrics metrics.Metrics) *Handler {
 	return &Handler{
 		service:   service,
 		httpUtils: httpUtils,
 		validator: validator,
+		metrics: metrics,
 	}
 }
 
 func (h *Handler) FetchEta(ctx *gin.Context) {
+	startTime := time.Now()
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 
@@ -41,6 +47,7 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
+		h.recordMetrics(startTime, method, route, fetchEtaRequest.Surface, http.StatusBadRequest)
 		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
 		return
 	}
@@ -56,6 +63,7 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
+		h.recordMetrics(startTime, method, route, fetchEtaRequest.Surface ,http.StatusBadRequest)
 		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError("missing mandatory request id")))
 		return
 	}
@@ -63,7 +71,6 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	fetchEtaRequest.OrderId = ctx.GetHeader("x-order-id")
 	fetchEtaRequest.RequestId = requestId
 
-	// Do validation
 	if err := h.validator.ValidateFetchEtaRequest(&fetchEtaRequest); err != nil {
 		logger.Error(logger.Format{
 			Event:   "VALIDATE_FETCH_ETA_REQUEST",
@@ -74,6 +81,7 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 				"route":  route,
 			},
 		})
+		h.recordMetrics(startTime, method, route, fetchEtaRequest.Surface,http.StatusBadRequest)
 		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError(err.Error())))
 		return
 	}
@@ -91,10 +99,12 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 			},
 		})
 		statusCode, httpErr := httpUtils.ResolveHTTPStatusError(err, "something went wrong. Try again")
+		h.recordMetrics(startTime, method, route, fetchEtaRequest.Surface,statusCode)
 		ctx.JSON(statusCode, h.httpUtils.BuildErrorResponse(httpErr))
 		return
 	}
 
+	h.recordMetrics(startTime, method, route, fetchEtaRequest.Surface,http.StatusOK)
 	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(resp))
 }
 
@@ -318,4 +328,9 @@ func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(gin.H{
 		"message": "sublocality estimates updated",
 	}))
+}
+
+func (h *Handler) recordMetrics(startTime time.Time, method, route string, surface constants.Surface, status int) {
+	durationMs := time.Since(startTime).Milliseconds()
+	h.metrics.RecordHTTPServerRequest(method, route, surface, status, durationMs)
 }

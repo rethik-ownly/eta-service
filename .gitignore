@@ -16,3 +16,5 @@ scripts/
 docker-compose.kafka.yml
 
 *.csv
+
+*.sh
