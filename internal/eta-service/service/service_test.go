@@ -121,7 +121,7 @@ func newTestService(repo *mockRepository, utils *mockCommonUtils, routing *mockR
 	}
 }
 
-func populatedRestaurantMeal() types.RestaurantMealEstimate {
+func populatedRestaurantMealEstimate() types.RestaurantMealEstimate {
 	return types.RestaurantMealEstimate{
 		Rat:           types.TimeSample{Seconds: 100, SampleCount: 1},
 		Kpt:           types.TimeSample{Seconds: 800, SampleCount: 1},
@@ -130,20 +130,20 @@ func populatedRestaurantMeal() types.RestaurantMealEstimate {
 	}
 }
 
-func populatedSublocalityMeal() types.SublocalityMealEstimate {
+func populatedSublocalityMealEstimate() types.SublocalityMealEstimate {
 	return types.SublocalityMealEstimate{
 		Cat: types.TimeSample{Seconds: 200, SampleCount: 1},
 		Fm:  types.TimeSample{Seconds: 400, SampleCount: 1},
 	}
 }
 
-func TestExtractSourcesAndIDs(t *testing.T) {
+func TestExtractRestaurantLocationsAndIDs(t *testing.T) {
 	entities := []types.FetchEtaRequestEntity{
 		{RestaurantID: "r1", RestaurantLocation: types.Location{Lat: 12.1, Lng: 77.1}},
 		{RestaurantID: "r2", RestaurantLocation: types.Location{Lat: 12.2, Lng: 77.2}},
 	}
 
-	sources, ids := extractSourcesAndIDs(entities)
+	sources, ids := extractRestaurantLocationsAndIDs(entities)
 
 	if len(sources) != 2 || len(ids) != 2 {
 		t.Fatalf("expected 2 sources and ids, got %d and %d", len(sources), len(ids))
@@ -156,36 +156,91 @@ func TestExtractSourcesAndIDs(t *testing.T) {
 	}
 }
 
-func TestSublocalityIDFor(t *testing.T) {
+func TestRestaurantSublocalityID(t *testing.T) {
 	byRestaurant := map[string]types.EtaRestaurantEstimates{
 		"r1": {SublocalityId: "sub1"},
 	}
 
-	if got := sublocalityIDFor("r1", byRestaurant, false); got != "sub1" {
+	if got := restaurantSublocalityID("r1", byRestaurant, false); got != "sub1" {
 		t.Fatalf("expected sub1, got %q", got)
 	}
-	if got := sublocalityIDFor("missing", byRestaurant, false); got != "" {
+	if got := restaurantSublocalityID("missing", byRestaurant, false); got != "" {
 		t.Fatalf("expected empty for missing restaurant, got %q", got)
 	}
-	if got := sublocalityIDFor("r1", byRestaurant, true); got != "" {
+	if got := restaurantSublocalityID("r1", byRestaurant, true); got != "" {
 		t.Fatalf("expected empty when restaurant fetch failed, got %q", got)
 	}
 }
 
-func TestGetUniqueSublocalitiesId(t *testing.T) {
+func TestUniqueSublocalityIDs(t *testing.T) {
 	estimates := []types.EtaRestaurantEstimates{
 		{SublocalityId: "sub1"},
 		{SublocalityId: "sub2"},
 		{SublocalityId: "sub1"},
 	}
 
-	ids := getUniqueSublocalitiesId(estimates)
+	ids := uniqueSublocalityIDs(estimates)
 	if len(ids) != 2 {
 		t.Fatalf("expected 2 unique ids, got %d: %v", len(ids), ids)
 	}
 }
 
-func TestFetchRestaurantEstimates(t *testing.T) {
+func TestResolveEtaSource(t *testing.T) {
+	if got := resolveEtaSource(false); got != constants.EtaSourceHistoric {
+		t.Fatalf("expected historic, got %q", got)
+	}
+	if got := resolveEtaSource(true); got != constants.EtaSourceFallback {
+		t.Fatalf("expected fallback, got %q", got)
+	}
+}
+
+func TestResolveRestaurantMealEstimate(t *testing.T) {
+	svc := newTestService(&mockRepository{}, &mockCommonUtils{}, &mockRoutingClient{})
+	meal := populatedRestaurantMealEstimate()
+	byRestaurant := map[string]types.EtaRestaurantEstimates{
+		"r1": {RestaurantId: "r1", Lunch: meal},
+	}
+
+	got, usedFallback := svc.resolveRestaurantMealEstimate("r1", constants.Lunch, byRestaurant, false)
+	if usedFallback || got.Rat.Seconds != 100 {
+		t.Fatalf("expected historic restaurant meal, got fallback=%v meal=%+v", usedFallback, got)
+	}
+
+	got, usedFallback = svc.resolveRestaurantMealEstimate("missing", constants.Lunch, byRestaurant, false)
+	if !usedFallback || got.Rat.Seconds != 120 {
+		t.Fatalf("expected default fallback for missing restaurant, got fallback=%v rat=%f", usedFallback, got.Rat.Seconds)
+	}
+
+	got, usedFallback = svc.resolveRestaurantMealEstimate("r1", constants.Lunch, byRestaurant, true)
+	if !usedFallback || got.Kpt.Seconds != 900 {
+		t.Fatalf("expected default fallback on mongo failure, got fallback=%v kpt=%f", usedFallback, got.Kpt.Seconds)
+	}
+}
+
+func TestResolveSublocalityMealEstimate(t *testing.T) {
+	svc := newTestService(&mockRepository{}, &mockCommonUtils{}, &mockRoutingClient{})
+	meal := populatedSublocalityMealEstimate()
+	bySublocality := map[string]types.EtaSublocalityEstimates{
+		"sub1": {SublocalityId: "sub1", Lunch: meal},
+	}
+
+	got, usedFallback := svc.resolveSublocalityMealEstimate("sub1", constants.Lunch, bySublocality, false)
+	if usedFallback || got.Cat.Seconds != 200 {
+		t.Fatalf("expected historic sublocality meal, got fallback=%v meal=%+v", usedFallback, got)
+	}
+
+	got, usedFallback = svc.resolveSublocalityMealEstimate("", constants.Lunch, bySublocality, false)
+	if !usedFallback || got.Fm.Seconds != 600 {
+		t.Fatalf("expected default fallback for empty sublocality id, got fallback=%v fm=%f", usedFallback, got.Fm.Seconds)
+	}
+
+	got, usedFallback = svc.resolveSublocalityMealEstimate("sub1", constants.Lunch, bySublocality, true)
+	if !usedFallback || got.Cat.Seconds != 300 {
+		t.Fatalf("expected default fallback on mongo failure, got fallback=%v cat=%f", usedFallback, got.Cat.Seconds)
+	}
+}
+
+func TestLoadRestaurantEstimates(t *testing.T) {
 	repo := &mockRepository{
 		restaurantEstimates: []types.EtaRestaurantEstimates{
 			{RestaurantId: "r1", SublocalityId: "sub1"},
@@ -193,7 +248,7 @@ func TestFetchRestaurantEstimates(t *testing.T) {
 	}
 	svc := newTestService(repo, &mockCommonUtils{}, &mockRoutingClient{})
 
-	byID, slice, failed := svc.fetchRestaurantEstimates([]string{"r1"}, constants.Monday, constants.Lunch, 100)
+	byID, slice, failed := svc.loadRestaurantEstimates([]string{"r1"}, constants.Monday, constants.Lunch, 100)
 	if failed {
 		t.Fatal("expected success")
 	}
@@ -205,13 +260,13 @@ func TestFetchRestaurantEstimates(t *testing.T) {
 	}
 
 	repo.restaurantErr = errors.New("mongo down")
-	byID, slice, failed = svc.fetchRestaurantEstimates([]string{"r1"}, constants.Monday, constants.Lunch, 100)
+	byID, slice, failed = svc.loadRestaurantEstimates([]string{"r1"}, constants.Monday, constants.Lunch, 100)
 	if !failed || byID != nil || slice != nil {
 		t.Fatal("expected failure with nil map and slice")
 	}
 }
 
-func TestFetchSublocalityEstimates(t *testing.T) {
+func TestLoadSublocalityEstimates(t *testing.T) {
 	repo := &mockRepository{
 		sublocalityEstimates: []types.EtaSublocalityEstimates{
 			{SublocalityId: "sub1"},
@@ -220,27 +275,27 @@ func TestFetchSublocalityEstimates(t *testing.T) {
 	svc := newTestService(repo, &mockCommonUtils{}, &mockRoutingClient{})
 
 	restaurantEstimates := []types.EtaRestaurantEstimates{{SublocalityId: "sub1"}}
-	byID, failed := svc.fetchSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, false)
+	byID, failed := svc.loadSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, false)
 	if failed || len(byID) != 1 {
 		t.Fatalf("expected success with one sublocality, failed=%v map=%v", failed, byID)
 	}
 
-	_, failed = svc.fetchSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, true)
+	_, failed = svc.loadSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, true)
 	if !failed {
 		t.Fatal("expected failure when restaurant fetch failed")
 	}
 
 	repo.sublocalityErr = errors.New("mongo down")
-	_, failed = svc.fetchSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, false)
+	_, failed = svc.loadSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, false)
 	if !failed {
 		t.Fatal("expected failure on sublocality mongo error")
 	}
 }
 
-func TestLastMileSeconds(t *testing.T) {
+func TestCalculateLastMileDurationSeconds(t *testing.T) {
 	svc := newTestService(&mockRepository{}, &mockCommonUtils{distance: 5.0}, &mockRoutingClient{})
 
-	haversine := svc.lastMileSeconds(
+	haversine := svc.calculateLastMileDurationSeconds(
 		types.Location{Lat: 12.0, Lng: 77.0},
 		types.Location{Lat: 12.1, Lng: 77.1},
 		nil,
@@ -256,7 +311,7 @@ func TestLastMileSeconds(t *testing.T) {
 			{{Duration: routingengine.DurationInfo{Value: 420}}},
 		},
 	}
-	routing := svc.lastMileSeconds(
+	routing := svc.calculateLastMileDurationSeconds(
 		types.Location{Lat: 12.0, Lng: 77.0},
 		types.Location{Lat: 12.1, Lng: 77.1},
 		matrix,
@@ -269,8 +324,8 @@ func TestLastMileSeconds(t *testing.T) {
 }
 
 func TestFetchEta_HistoricSource(t *testing.T) {
-	meal := populatedRestaurantMeal()
-	subMeal := populatedSublocalityMeal()
+	meal := populatedRestaurantMealEstimate()
+	subMeal := populatedSublocalityMealEstimate()
 
 	repo := &mockRepository{
 		restaurantEstimates: []types.EtaRestaurantEstimates{
@@ -306,7 +361,6 @@ func TestFetchEta_HistoricSource(t *testing.T) {
 		t.Fatalf("expected 1 response, got %d", len(resp))
 	}
 
-	// RAT(100) + max(KPT(800), CAT(200)+FM(400)+Pickup(150)+Delay(50)=800) + lastMile(300) = 1200
 	expectedETA := uint(1200)
 	if resp[0].EtaInSeconds != expectedETA {
 		t.Fatalf("expected eta %d, got %d", expectedETA, resp[0].EtaInSeconds)
@@ -334,7 +388,6 @@ func TestFetchEta_FallbackOnMongoAndRoutingFailure(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// defaults: RAT(120) + max(KPT(900), CAT(300)+FM(600)+Pickup(180)+Delay(60)=1140) + haversine(3.6/HF_SPEED)
 	lastMile := 3.6 / constants.HF_SPEED
 	expectedETA := uint(120 + 1140 + lastMile)
 	if resp[0].EtaInSeconds != expectedETA {
@@ -346,8 +399,8 @@ func TestFetchEta_FallbackOnMongoAndRoutingFailure(t *testing.T) {
 }
 
 func TestFetchEta_MultipleEntities(t *testing.T) {
-	meal := populatedRestaurantMeal()
-	subMeal := populatedSublocalityMeal()
+	meal := populatedRestaurantMealEstimate()
+	subMeal := populatedSublocalityMealEstimate()
 
 	repo := &mockRepository{
 		restaurantEstimates: []types.EtaRestaurantEstimates{
