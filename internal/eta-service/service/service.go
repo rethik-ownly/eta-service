@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	logger "github.com/nutanalabs/rapido-logger-go"
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	routingengine "github.com/nutanalabs/eta-service/internal/serviceclients/routing-engine"
 	"github.com/nutanalabs/eta-service/internal/types"
 	common "github.com/nutanalabs/eta-service/internal/utils/common"
+	logger "github.com/nutanalabs/rapido-logger-go"
 )
 
 type Service interface {
@@ -42,85 +42,33 @@ func NewService(repository repository.Repository,
 }
 
 func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error) {
-	// Time , day , mealtype
 	now := time.Now()
 	day := s.commonUtils.GetDayFromTime(now)
 	mealType := s.commonUtils.GetMealTypeFromTime(now)
-
-	var sources []types.Location
-	var restaurantsID []string
-	for _, value := range request.Entities {
-		sources = append(sources, value.RestaurantLocation)
-		restaurantsID = append(restaurantsID, value.RestaurantID)
-	}
-
 	batchSize := s.config.Mongo.QueryBatchSize
 
-	restaurantsEstimates, restaurantMongoErr := s.repository.FetchRestaurantEstimatesByIDs(restaurantsID, day, mealType, batchSize)
-	restaurantMongoFailed := restaurantMongoErr != nil
+	sources, restaurantIDs := extractSourcesAndIDs(request.Entities)
 
-	estimatesByRestaurant := make(map[string]types.EtaRestaurantEstimates)
-	if !restaurantMongoFailed {
-		for _, e := range restaurantsEstimates {
-			estimatesByRestaurant[e.RestaurantId] = e
-		}
-	}
+	estimatesByRestaurant, restaurantEstimates, restaurantFailed := s.fetchRestaurantEstimates(restaurantIDs, day, mealType, batchSize)
+	estimatesBySublocality, sublocalityFailed := s.fetchSublocalityEstimates(restaurantEstimates, day, mealType, batchSize, restaurantFailed)
 
-	var sublocalitiesEstimates []types.EtaSublocalityEstimates
-	sublocalityMongoFailed := false
-	if !restaurantMongoFailed {
-		uniqueSublocalitesID := getUniqueSublocalitiesId(restaurantsEstimates)
-		var sublocalityMongoErr error
-		sublocalitiesEstimates, sublocalityMongoErr = s.repository.FetchSublocalityEstimatesByIDs(uniqueSublocalitesID, day, mealType, batchSize)
-		sublocalityMongoFailed = sublocalityMongoErr != nil
-	} else {
-		sublocalityMongoFailed = true
-	}
+	distanceMatrix, routingFailed := s.fetchDistanceMatrix(request, sources)
 
-	estimatesBySublocality := make(map[string]types.EtaSublocalityEstimates)
-	if !sublocalityMongoFailed {
-		for _, e := range sublocalitiesEstimates {
-			estimatesBySublocality[e.SublocalityId] = e
-		}
-	}
+	response := make([]types.FetchEtaResponse, 0, len(request.Entities))
+	for i, entity := range request.Entities {
+		rest, restFallback := s.resolveRestaurantFood(entity.RestaurantID, mealType, estimatesByRestaurant, restaurantFailed)
 
-	distanceMatrixRequest := routingengine.DistanceMatrixRequest{
-		Sources:           sources,
-		Destinations:      []types.Location{request.UserLocation},
-		Vehicle:           constants.VEHICLE_TWO_WHEELER,
-		RoutingPreference: constants.ROUTING_PREFERENCE_TRAFFIC_AWARE,
-	}
+		sublocalityID := sublocalityIDFor(entity.RestaurantID, estimatesByRestaurant, restaurantFailed)
+		sub, subFallback := s.resolveSublocalityFood(sublocalityID, mealType, estimatesBySublocality, sublocalityFailed)
 
-	distanceMatrixResponse, routingClientErr := s.getDistanceMatrix(request.Options.QosLevel, &distanceMatrixRequest)
-	routingClientFailed := routingClientErr != nil
-
-	var response []types.FetchEtaResponse
-	for index, value := range request.Entities {
-		restSection, restUsedFallback := s.resolveRestaurantFood(value.RestaurantID, mealType, estimatesByRestaurant, restaurantMongoFailed)
-
-		sublocalityID := ""
-		if !restaurantMongoFailed {
-			if restaurantEstimates, ok := estimatesByRestaurant[value.RestaurantID]; ok {
-				sublocalityID = restaurantEstimates.SublocalityId
-			}
-		}
-
-		subSection, subUsedFallback := s.resolveSublocalityFood(sublocalityID, mealType, estimatesBySublocality, sublocalityMongoFailed)
-
-		var lastMile float64 
-		if routingClientFailed {
-			haversineDistance := s.commonUtils.GetHaversineDistance(request.UserLocation.Lat, request.UserLocation.Lng, value.RestaurantLocation.Lat, value.RestaurantLocation.Lng)
-			lastMile = haversineDistance / constants.HF_SPEED
-		}else {
-			lastMile = distanceMatrixResponse.Data[index][0].Duration.Value
-		}
-		
-		etaInSeconds := restSection.Rat.Seconds + max(restSection.Kpt.Seconds, subSection.Cat.Seconds+subSection.Fm.Seconds+restSection.Pickup.Seconds+restSection.DelayDispatch.Seconds) + lastMile
+		lastMile := s.lastMileSeconds(request.UserLocation, entity.RestaurantLocation, distanceMatrix, routingFailed, i)
+		kitchenOrDispatch := max(rest.Kpt.Seconds, sub.Cat.Seconds+sub.Fm.Seconds+rest.Pickup.Seconds+rest.DelayDispatch.Seconds)
+		eta := rest.Rat.Seconds + kitchenOrDispatch + lastMile
 
 		response = append(response, types.FetchEtaResponse{
-			RestaurantID: value.RestaurantID,
-			EtaInSeconds: uint(etaInSeconds),
-			Source:       etaSourceFromFallback(restUsedFallback || subUsedFallback || routingClientFailed),
+			RestaurantID: entity.RestaurantID,
+			EtaInSeconds: uint(eta),
+			Source:       etaSourceFromFallback(restFallback || subFallback || routingFailed),
 		})
 	}
 
