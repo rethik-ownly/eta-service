@@ -8,11 +8,11 @@ import (
 
 type Validator interface {
 	ValidateFetchEtaRequest(request *types.FetchEtaRequest) error
-	ValidateInsertRestaurantEstimateRequest(request *types.InsertRestaurantEstimateRequest) error
-	ValidateInsertSublocalityEstimateRequest(request *types.InsertSublocalityEstimateRequest) error
+	ValidateInsertRestaurantComponentsRequest(request *types.InsertRestaurantComponentsRequest) error
+	ValidateInsertSublocalityComponentsRequest(request *types.InsertSublocalityComponentsRequest) error
 
-	ValidateUpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error
-	ValidateUpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error
+	ValidateUpdateRestaurantComponents(restaurantId string, request *types.UpdateRestaurantComponentsRequest) error
+	ValidateUpdateSublocalityComponents(sublocalityId string, request *types.UpdateSublocalityComponentsRequest) error
 }
 
 type validatorImpl struct {
@@ -50,7 +50,7 @@ func (v *validatorImpl) ValidateFetchEtaRequest(request *types.FetchEtaRequest) 
 	return nil
 }
 
-func (v *validatorImpl) ValidateInsertRestaurantEstimateRequest(request *types.InsertRestaurantEstimateRequest) error {
+func (v *validatorImpl) ValidateInsertRestaurantComponentsRequest(request *types.InsertRestaurantComponentsRequest) error {
 	if request.RestaurantId == "" {
 		return types.NewBadRequestError("invalid restaurantId")
 	}
@@ -71,25 +71,25 @@ func (v *validatorImpl) ValidateInsertRestaurantEstimateRequest(request *types.I
 			return types.NewBadRequestError("invalid dayType")
 		}
 	}
-	if err := validateRestaurantMealEstimate(request.Breakfast); err != nil {
+	if err := validateRestaurantMealComponents(request.Breakfast); err != nil {
 		return err
 	}
-	if err := validateRestaurantMealEstimate(request.Lunch); err != nil {
+	if err := validateRestaurantMealComponents(request.Lunch); err != nil {
 		return err
 	}
-	if err := validateRestaurantMealEstimate(request.Snacks); err != nil {
+	if err := validateRestaurantMealComponents(request.Snacks); err != nil {
 		return err
 	}
-	if err := validateRestaurantMealEstimate(request.Dinner); err != nil {
+	if err := validateRestaurantMealComponents(request.Dinner); err != nil {
 		return err
 	}
-	if err := validateRestaurantMealEstimate(request.Latenight); err != nil {
+	if err := validateRestaurantMealComponents(request.Latenight); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (v *validatorImpl) ValidateInsertSublocalityEstimateRequest(request *types.InsertSublocalityEstimateRequest) error {
+func (v *validatorImpl) ValidateInsertSublocalityComponentsRequest(request *types.InsertSublocalityComponentsRequest) error {
 	if request.SublocalityId == "" {
 		return types.NewBadRequestError("invalid sublocalityId")
 	}
@@ -107,25 +107,25 @@ func (v *validatorImpl) ValidateInsertSublocalityEstimateRequest(request *types.
 			return types.NewBadRequestError("invalid dayType")
 		}
 	}
-	if err := validateSublocalityMealEstimate(request.Breakfast); err != nil {
+	if err := validateSublocalityMealComponents(request.Breakfast); err != nil {
 		return err
 	}
-	if err := validateSublocalityMealEstimate(request.Lunch); err != nil {
+	if err := validateSublocalityMealComponents(request.Lunch); err != nil {
 		return err
 	}
-	if err := validateSublocalityMealEstimate(request.Snacks); err != nil {
+	if err := validateSublocalityMealComponents(request.Snacks); err != nil {
 		return err
 	}
-	if err := validateSublocalityMealEstimate(request.Dinner); err != nil {
+	if err := validateSublocalityMealComponents(request.Dinner); err != nil {
 		return err
 	}
-	if err := validateSublocalityMealEstimate(request.Latenight); err != nil {
+	if err := validateSublocalityMealComponents(request.Latenight); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (v *validatorImpl) ValidateUpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error {
+func (v *validatorImpl) ValidateUpdateRestaurantComponents(restaurantId string, request *types.UpdateRestaurantComponentsRequest) error {
 	if restaurantId == "" {
 		return types.NewBadRequestError("invalid restaurantId")
 	}
@@ -191,7 +191,7 @@ func (v *validatorImpl) ValidateUpdateRestaurantEstimates(restaurantId string, r
 	return nil
 }
 
-func (v *validatorImpl) ValidateUpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error {
+func (v *validatorImpl) ValidateUpdateSublocalityComponents(sublocalityId string, request *types.UpdateSublocalityComponentsRequest) error {
 	if sublocalityId == "" {
 		return types.NewBadRequestError("invalid sublocalityId")
 	}
@@ -242,7 +242,7 @@ func (v *validatorImpl) ValidateUpdateSublocalityEstimates(sublocalityId string,
 
 // Helpers
 
-func validateRestaurantMealEstimate(estimate types.RestaurantMealEstimate) error {
+func validateRestaurantMealComponents(estimate types.RestaurantMealComponents) error {
 	if estimate.Rat.Seconds < 0 || estimate.Rat.SampleCount < 0 {
 		return types.NewBadRequestError("invalid rat estimate")
 	}
@@ -258,7 +258,7 @@ func validateRestaurantMealEstimate(estimate types.RestaurantMealEstimate) error
 	return nil
 }
 
-func validateSublocalityMealEstimate(estimate types.SublocalityMealEstimate) error {
+func validateSublocalityMealComponents(estimate types.SublocalityMealComponents) error {
 	if estimate.Cat.Seconds < 0 || estimate.Cat.SampleCount < 0 {
 		return types.NewBadRequestError("invalid cat estimate")
 	}

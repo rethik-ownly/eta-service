@@ -8,14 +8,14 @@ func (h *Handler) InitRoutes(router *gin.Engine) {
 	router.POST("/api/v1/eta/promise", h.FetchEta)
 
 	// Insert
-	router.POST("/api/v1/eta/restaurant", h.InsertRestaurantEstimates)
-	router.POST("/api/v1/eta/sublocality", h.InsertSublocalityEstimates)
+	router.POST("/api/v1/eta/restaurant", h.InsertRestaurantComponents)
+	router.POST("/api/v1/eta/sublocality", h.InsertSublocalityComponents)
 
 	// Update
-	router.PATCH("/api/v1/eta/restaurant/:restaurantId", h.UpdateRestaurantEstimates)
-	router.PATCH("/api/v1/eta/sublocality/:sublocalityId", h.UpdateSublocalityEstimates)
+	router.PATCH("/api/v1/eta/restaurant/:restaurantId", h.UpdateRestaurantComponents)
+	router.PATCH("/api/v1/eta/sublocality/:sublocalityId", h.UpdateSublocalityComponents)
 
 	// Delete
-	// router.DELETE("/api/v1/eta/restaurant/:restaurantId", h.DeleteRestaurantEstimates)
-	// router.DELETE("/api/v1/eta/sublocality/:sublocalityId", h.DeleteSublocalityEstimates)
+	// router.DELETE("/api/v1/eta/restaurant/:restaurantId", h.DeleteRestaurantComponents)
+	// router.DELETE("/api/v1/eta/sublocality/:sublocalityId", h.DeleteSublocalityComponents)
 }

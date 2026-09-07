@@ -38,34 +38,34 @@ type FetchEtaResponse struct {
 	DisplayMax   uint   `json:"displayMax,omitempty"`
 }
 
-// Insert Eta Request
-type InsertRestaurantEstimateRequest struct {
+// Insert components request
+type InsertRestaurantComponentsRequest struct {
 	RestaurantId  string          `json:"restaurantId"`
 	DayType       []constants.Day `json:"dayType"`
 	CityId        string          `json:"cityId"`
 	ZoneId        string          `json:"zoneId"`
 	SublocalityId string          `json:"sublocalityId"`
 
-	Breakfast RestaurantMealEstimate `json:"breakfast,omitempty"`
-	Lunch     RestaurantMealEstimate `json:"lunch,omitempty"`
-	Snacks    RestaurantMealEstimate `json:"snacks,omitempty"`
-	Dinner    RestaurantMealEstimate `json:"dinner,omitempty"`
-	Latenight RestaurantMealEstimate `json:"latenight,omitempty"`
+	Breakfast RestaurantMealComponents `json:"breakfast,omitempty"`
+	Lunch     RestaurantMealComponents `json:"lunch,omitempty"`
+	Snacks    RestaurantMealComponents `json:"snacks,omitempty"`
+	Dinner    RestaurantMealComponents `json:"dinner,omitempty"`
+	Latenight RestaurantMealComponents `json:"latenight,omitempty"`
 
 	UpdatedAt float64 `json:"-"`
 }
 
-type InsertSublocalityEstimateRequest struct {
+type InsertSublocalityComponentsRequest struct {
 	SublocalityId string          `json:"sublocalityId"`
 	DayType       []constants.Day `json:"dayType"`
 	ZoneId        string          `json:"zoneId,omitempty"`
 	CityId        string          `json:"cityId"`
 
-	Breakfast SublocalityMealEstimate `json:"breakfast"`
-	Lunch     SublocalityMealEstimate `json:"lunch"`
-	Snacks    SublocalityMealEstimate `json:"snacks"`
-	Dinner    SublocalityMealEstimate `json:"dinner"`
-	Latenight SublocalityMealEstimate `json:"latenight"`
+	Breakfast SublocalityMealComponents `json:"breakfast"`
+	Lunch     SublocalityMealComponents `json:"lunch"`
+	Snacks    SublocalityMealComponents `json:"snacks"`
+	Dinner    SublocalityMealComponents `json:"dinner"`
+	Latenight SublocalityMealComponents `json:"latenight"`
 
 	UpdatedAt float64 `json:"-"`
 }
@@ -78,7 +78,7 @@ type InsertSublocalityEstimateRequest struct {
 // required when patching one of the nested Rat/Kpt/Pickup/DelayDispatch sections. Days,
 // if provided, replaces the whole dayType array (e.g. to add another day to
 // this same document).
-type UpdateRestaurantEstimateRequest struct {
+type UpdateRestaurantComponentsRequest struct {
 	RestaurantId string `json:"-"`
 
 	Day      constants.Day      `json:"day" binding:"required"`
@@ -109,7 +109,7 @@ type UpdateRestaurantEstimateRequest struct {
 // when patching one of the nested Cat/Fm sections. Days, if provided,
 // replaces the whole day array (e.g. to add another day to this same
 // document).
-type UpdateSublocalityEstimateRequest struct {
+type UpdateSublocalityComponentsRequest struct {
 	SublocalityId string `json:"-"`
 
 	Day      constants.Day      `json:"day" binding:"required"`

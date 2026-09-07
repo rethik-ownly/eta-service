@@ -12,27 +12,27 @@ import (
 )
 
 type mockRepository struct {
-	restaurantEstimates  []types.EtaRestaurantEstimates
-	restaurantErr        error
-	sublocalityEstimates []types.EtaSublocalityEstimates
-	sublocalityErr       error
-	publishCalled        bool
+	restaurantComponents  []types.RestaurantComponents
+	restaurantErr         error
+	sublocalityComponents []types.SublocalityComponents
+	sublocalityErr        error
+	publishCalled         bool
 }
 
-func (m *mockRepository) FetchRestaurantEstimates(_ string, _ constants.Day, _ constants.MealType) (*types.EtaRestaurantEstimates, error) {
+func (m *mockRepository) FetchRestaurantComponents(_ string, _ constants.Day, _ constants.MealType) (*types.RestaurantComponents, error) {
 	return nil, nil
 }
 
-func (m *mockRepository) FetchSublocalityEstimates(_ string, _ constants.Day, _ constants.MealType) (*types.EtaSublocalityEstimates, error) {
+func (m *mockRepository) FetchSublocalityComponents(_ string, _ constants.Day, _ constants.MealType) (*types.SublocalityComponents, error) {
 	return nil, nil
 }
 
-func (m *mockRepository) FetchRestaurantEstimatesByIDs(_ []string, _ constants.Day, _ constants.MealType, _ int) ([]types.EtaRestaurantEstimates, error) {
-	return m.restaurantEstimates, m.restaurantErr
+func (m *mockRepository) FetchRestaurantComponentsByIDs(_ []string, _ constants.Day, _ constants.MealType, _ int) ([]types.RestaurantComponents, error) {
+	return m.restaurantComponents, m.restaurantErr
 }
 
-func (m *mockRepository) FetchSublocalityEstimatesByIDs(_ []string, _ constants.Day, _ constants.MealType, _ int) ([]types.EtaSublocalityEstimates, error) {
-	return m.sublocalityEstimates, m.sublocalityErr
+func (m *mockRepository) FetchSublocalityComponentsByIDs(_ []string, _ constants.Day, _ constants.MealType, _ int) ([]types.SublocalityComponents, error) {
+	return m.sublocalityComponents, m.sublocalityErr
 }
 
 func (m *mockRepository) RestaurantDayOverlapExists(_ string, _ []constants.Day) (bool, error) {
@@ -43,19 +43,19 @@ func (m *mockRepository) SublocalityDayOverlapExists(_ string, _ []constants.Day
 	return false, nil
 }
 
-func (m *mockRepository) InsertRestaurantEstimates(_ *types.InsertRestaurantEstimateRequest) error {
+func (m *mockRepository) InsertRestaurantComponents(_ *types.InsertRestaurantComponentsRequest) error {
 	return nil
 }
 
-func (m *mockRepository) InsertSublocalityEstimates(_ *types.InsertSublocalityEstimateRequest) error {
+func (m *mockRepository) InsertSublocalityComponents(_ *types.InsertSublocalityComponentsRequest) error {
 	return nil
 }
 
-func (m *mockRepository) UpdateRestaurantEstimates(_ string, _ *types.UpdateRestaurantEstimateRequest) error {
+func (m *mockRepository) UpdateRestaurantComponents(_ string, _ *types.UpdateRestaurantComponentsRequest) error {
 	return nil
 }
 
-func (m *mockRepository) UpdateSublocalityEstimates(_ string, _ *types.UpdateSublocalityEstimateRequest) error {
+func (m *mockRepository) UpdateSublocalityComponents(_ string, _ *types.UpdateSublocalityComponentsRequest) error {
 	return nil
 }
 
@@ -121,8 +121,8 @@ func newTestService(repo *mockRepository, utils *mockCommonUtils, routing *mockR
 	}
 }
 
-func populatedRestaurantMealEstimate() types.RestaurantMealEstimate {
-	return types.RestaurantMealEstimate{
+func populatedRestaurantMealComponents() types.RestaurantMealComponents {
+	return types.RestaurantMealComponents{
 		Rat:           types.TimeSample{Seconds: 100, SampleCount: 1},
 		Kpt:           types.TimeSample{Seconds: 800, SampleCount: 1},
 		Pickup:        types.TimeSample{Seconds: 150, SampleCount: 1},
@@ -130,8 +130,8 @@ func populatedRestaurantMealEstimate() types.RestaurantMealEstimate {
 	}
 }
 
-func populatedSublocalityMealEstimate() types.SublocalityMealEstimate {
-	return types.SublocalityMealEstimate{
+func populatedSublocalityMealComponents() types.SublocalityMealComponents {
+	return types.SublocalityMealComponents{
 		Cat: types.TimeSample{Seconds: 200, SampleCount: 1},
 		Fm:  types.TimeSample{Seconds: 400, SampleCount: 1},
 	}
@@ -157,7 +157,7 @@ func TestExtractRestaurantLocationsAndIDs(t *testing.T) {
 }
 
 func TestRestaurantSublocalityID(t *testing.T) {
-	byRestaurant := map[string]types.EtaRestaurantEstimates{
+	byRestaurant := map[string]types.RestaurantComponents{
 		"r1": {SublocalityId: "sub1"},
 	}
 
@@ -173,13 +173,13 @@ func TestRestaurantSublocalityID(t *testing.T) {
 }
 
 func TestUniqueSublocalityIDs(t *testing.T) {
-	estimates := []types.EtaRestaurantEstimates{
+	components := []types.RestaurantComponents{
 		{SublocalityId: "sub1"},
 		{SublocalityId: "sub2"},
 		{SublocalityId: "sub1"},
 	}
 
-	ids := uniqueSublocalityIDs(estimates)
+	ids := uniqueSublocalityIDs(components)
 	if len(ids) != 2 {
 		t.Fatalf("expected 2 unique ids, got %d: %v", len(ids), ids)
 	}
@@ -194,61 +194,61 @@ func TestResolveEtaSource(t *testing.T) {
 	}
 }
 
-func TestResolveRestaurantMealEstimate(t *testing.T) {
+func TestResolveRestaurantMealComponents(t *testing.T) {
 	svc := newTestService(&mockRepository{}, &mockCommonUtils{}, &mockRoutingClient{})
-	meal := populatedRestaurantMealEstimate()
-	byRestaurant := map[string]types.EtaRestaurantEstimates{
+	meal := populatedRestaurantMealComponents()
+	byRestaurant := map[string]types.RestaurantComponents{
 		"r1": {RestaurantId: "r1", Lunch: meal},
 	}
 
-	got, usedFallback := svc.resolveRestaurantMealEstimate("r1", constants.Lunch, byRestaurant, false)
+	got, usedFallback := svc.resolveRestaurantMealComponents("r1", constants.Lunch, byRestaurant, false)
 	if usedFallback || got.Rat.Seconds != 100 {
 		t.Fatalf("expected historic restaurant meal, got fallback=%v meal=%+v", usedFallback, got)
 	}
 
-	got, usedFallback = svc.resolveRestaurantMealEstimate("missing", constants.Lunch, byRestaurant, false)
+	got, usedFallback = svc.resolveRestaurantMealComponents("missing", constants.Lunch, byRestaurant, false)
 	if !usedFallback || got.Rat.Seconds != 120 {
 		t.Fatalf("expected default fallback for missing restaurant, got fallback=%v rat=%f", usedFallback, got.Rat.Seconds)
 	}
 
-	got, usedFallback = svc.resolveRestaurantMealEstimate("r1", constants.Lunch, byRestaurant, true)
+	got, usedFallback = svc.resolveRestaurantMealComponents("r1", constants.Lunch, byRestaurant, true)
 	if !usedFallback || got.Kpt.Seconds != 900 {
 		t.Fatalf("expected default fallback on mongo failure, got fallback=%v kpt=%f", usedFallback, got.Kpt.Seconds)
 	}
 }
 
-func TestResolveSublocalityMealEstimate(t *testing.T) {
+func TestResolveSublocalityMealComponents(t *testing.T) {
 	svc := newTestService(&mockRepository{}, &mockCommonUtils{}, &mockRoutingClient{})
-	meal := populatedSublocalityMealEstimate()
-	bySublocality := map[string]types.EtaSublocalityEstimates{
+	meal := populatedSublocalityMealComponents()
+	bySublocality := map[string]types.SublocalityComponents{
 		"sub1": {SublocalityId: "sub1", Lunch: meal},
 	}
 
-	got, usedFallback := svc.resolveSublocalityMealEstimate("sub1", constants.Lunch, bySublocality, false)
+	got, usedFallback := svc.resolveSublocalityMealComponents("sub1", constants.Lunch, bySublocality, false)
 	if usedFallback || got.Cat.Seconds != 200 {
 		t.Fatalf("expected historic sublocality meal, got fallback=%v meal=%+v", usedFallback, got)
 	}
 
-	got, usedFallback = svc.resolveSublocalityMealEstimate("", constants.Lunch, bySublocality, false)
+	got, usedFallback = svc.resolveSublocalityMealComponents("", constants.Lunch, bySublocality, false)
 	if !usedFallback || got.Fm.Seconds != 600 {
 		t.Fatalf("expected default fallback for empty sublocality id, got fallback=%v fm=%f", usedFallback, got.Fm.Seconds)
 	}
 
-	got, usedFallback = svc.resolveSublocalityMealEstimate("sub1", constants.Lunch, bySublocality, true)
+	got, usedFallback = svc.resolveSublocalityMealComponents("sub1", constants.Lunch, bySublocality, true)
 	if !usedFallback || got.Cat.Seconds != 300 {
 		t.Fatalf("expected default fallback on mongo failure, got fallback=%v cat=%f", usedFallback, got.Cat.Seconds)
 	}
 }
 
-func TestLoadRestaurantEstimates(t *testing.T) {
+func TestLoadRestaurantComponents(t *testing.T) {
 	repo := &mockRepository{
-		restaurantEstimates: []types.EtaRestaurantEstimates{
+		restaurantComponents: []types.RestaurantComponents{
 			{RestaurantId: "r1", SublocalityId: "sub1"},
 		},
 	}
 	svc := newTestService(repo, &mockCommonUtils{}, &mockRoutingClient{})
 
-	byID, slice, failed := svc.loadRestaurantEstimates([]string{"r1"}, constants.Monday, constants.Lunch, 100)
+	byID, slice, failed := svc.loadRestaurantComponents([]string{"r1"}, constants.Monday, constants.Lunch, 100)
 	if failed {
 		t.Fatal("expected success")
 	}
@@ -256,37 +256,37 @@ func TestLoadRestaurantEstimates(t *testing.T) {
 		t.Fatalf("unexpected results: map=%d slice=%d", len(byID), len(slice))
 	}
 	if byID["r1"].SublocalityId != "sub1" {
-		t.Fatalf("unexpected estimate: %+v", byID["r1"])
+		t.Fatalf("unexpected components: %+v", byID["r1"])
 	}
 
 	repo.restaurantErr = errors.New("mongo down")
-	byID, slice, failed = svc.loadRestaurantEstimates([]string{"r1"}, constants.Monday, constants.Lunch, 100)
+	byID, slice, failed = svc.loadRestaurantComponents([]string{"r1"}, constants.Monday, constants.Lunch, 100)
 	if !failed || byID != nil || slice != nil {
 		t.Fatal("expected failure with nil map and slice")
 	}
 }
 
-func TestLoadSublocalityEstimates(t *testing.T) {
+func TestLoadSublocalityComponents(t *testing.T) {
 	repo := &mockRepository{
-		sublocalityEstimates: []types.EtaSublocalityEstimates{
+		sublocalityComponents: []types.SublocalityComponents{
 			{SublocalityId: "sub1"},
 		},
 	}
 	svc := newTestService(repo, &mockCommonUtils{}, &mockRoutingClient{})
 
-	restaurantEstimates := []types.EtaRestaurantEstimates{{SublocalityId: "sub1"}}
-	byID, failed := svc.loadSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, false)
+	restaurantComponents := []types.RestaurantComponents{{SublocalityId: "sub1"}}
+	byID, failed := svc.loadSublocalityComponents(restaurantComponents, constants.Monday, constants.Lunch, 100, false)
 	if failed || len(byID) != 1 {
 		t.Fatalf("expected success with one sublocality, failed=%v map=%v", failed, byID)
 	}
 
-	_, failed = svc.loadSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, true)
+	_, failed = svc.loadSublocalityComponents(restaurantComponents, constants.Monday, constants.Lunch, 100, true)
 	if !failed {
 		t.Fatal("expected failure when restaurant fetch failed")
 	}
 
 	repo.sublocalityErr = errors.New("mongo down")
-	_, failed = svc.loadSublocalityEstimates(restaurantEstimates, constants.Monday, constants.Lunch, 100, false)
+	_, failed = svc.loadSublocalityComponents(restaurantComponents, constants.Monday, constants.Lunch, 100, false)
 	if !failed {
 		t.Fatal("expected failure on sublocality mongo error")
 	}
@@ -324,18 +324,18 @@ func TestCalculateLastMileDurationSeconds(t *testing.T) {
 }
 
 func TestFetchEta_HistoricSource(t *testing.T) {
-	meal := populatedRestaurantMealEstimate()
-	subMeal := populatedSublocalityMealEstimate()
+	meal := populatedRestaurantMealComponents()
+	subMeal := populatedSublocalityMealComponents()
 
 	repo := &mockRepository{
-		restaurantEstimates: []types.EtaRestaurantEstimates{
+		restaurantComponents: []types.RestaurantComponents{
 			{
 				RestaurantId:  "r1",
 				SublocalityId: "sub1",
 				Lunch:         meal,
 			},
 		},
-		sublocalityEstimates: []types.EtaSublocalityEstimates{
+		sublocalityComponents: []types.SublocalityComponents{
 			{SublocalityId: "sub1", Lunch: subMeal},
 		},
 	}
@@ -399,15 +399,15 @@ func TestFetchEta_FallbackOnMongoAndRoutingFailure(t *testing.T) {
 }
 
 func TestFetchEta_MultipleEntities(t *testing.T) {
-	meal := populatedRestaurantMealEstimate()
-	subMeal := populatedSublocalityMealEstimate()
+	meal := populatedRestaurantMealComponents()
+	subMeal := populatedSublocalityMealComponents()
 
 	repo := &mockRepository{
-		restaurantEstimates: []types.EtaRestaurantEstimates{
+		restaurantComponents: []types.RestaurantComponents{
 			{RestaurantId: "r1", SublocalityId: "sub1", Lunch: meal},
 			{RestaurantId: "r2", SublocalityId: "sub1", Lunch: meal},
 		},
-		sublocalityEstimates: []types.EtaSublocalityEstimates{
+		sublocalityComponents: []types.SublocalityComponents{
 			{SublocalityId: "sub1", Lunch: subMeal},
 		},
 	}

@@ -68,7 +68,7 @@ func (mt MealType) IsValid() bool {
 }
 
 // BsonKey returns the nested bson field name for this meal type within the
-// eta_restaurant_estimates / eta_sublocality_estimates documents (e.g.
+// restaurant_components / sublocality_components documents (e.g.
 // "breakfast", "snacks", "latenight").
 func (mt MealType) BsonKey() string {
 	switch mt {
