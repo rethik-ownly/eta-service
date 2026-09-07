@@ -10,15 +10,16 @@ import (
 	logger "github.com/nutanalabs/rapido-logger-go"
 )
 
+//go:generate mockgen -source=./common.go -destination=./common_mock.go -package=utils
 type CommonUtils interface {
 	GetDayFromTime(t time.Time) constants.Day
 	GetMealTypeFromTime(t time.Time) constants.MealType
-    ToJSON(data interface{}) string
+	ToJSON(data interface{}) string
 
-    GetHaversineDistance(lat1, lng1, lat2, lng2 float64) float64 
+	GetHaversineDistance(lat1, lng1, lat2, lng2 float64) float64
 }
 
-type commonUtilImpl struct {}
+type commonUtilImpl struct{}
 
 func NewCommonUtils() CommonUtils {
 	return &commonUtilImpl{}
@@ -26,43 +27,43 @@ func NewCommonUtils() CommonUtils {
 
 func (c *commonUtilImpl) GetDayFromTime(t time.Time) constants.Day {
 	switch t.Weekday() {
-    case time.Monday:
-        return constants.Monday
-    case time.Tuesday:
-        return constants.Tuesday
-    case time.Wednesday:
-        return constants.Wednesday
-    case time.Thursday:
-        return constants.Thursday
-    case time.Friday:
-        return constants.Friday
-    case time.Saturday:
-        return constants.Saturday
-    case time.Sunday:
-        return constants.Sunday
+	case time.Monday:
+		return constants.Monday
+	case time.Tuesday:
+		return constants.Tuesday
+	case time.Wednesday:
+		return constants.Wednesday
+	case time.Thursday:
+		return constants.Thursday
+	case time.Friday:
+		return constants.Friday
+	case time.Saturday:
+		return constants.Saturday
+	case time.Sunday:
+		return constants.Sunday
 	default:
-        return constants.Monday
-    }
+		return constants.Monday
+	}
 }
 
 func (c *commonUtilImpl) GetMealTypeFromTime(t time.Time) constants.MealType {
 	hour := t.Hour()
-    switch {
-    case hour >= 6 && hour < 11:
-        return constants.Breakfast
-    case hour >= 11 && hour < 16:
-        return constants.Lunch
-    case hour >= 16 && hour < 19:
-        return constants.Snack
-    case hour >= 19 && hour < 23:
-        return constants.Dinner
-    default:
-        return constants.LateNight
-    }
+	switch {
+	case hour >= 6 && hour < 11:
+		return constants.Breakfast
+	case hour >= 11 && hour < 16:
+		return constants.Lunch
+	case hour >= 16 && hour < 19:
+		return constants.Snack
+	case hour >= 19 && hour < 23:
+		return constants.Dinner
+	default:
+		return constants.LateNight
+	}
 }
 
 func (c *commonUtilImpl) ToJSON(data interface{}) string {
-    b, err := json.Marshal(data)
+	b, err := json.Marshal(data)
 	if err != nil {
 		logger.Error(logger.Format{
 			Message: fmt.Sprintf("Error in ToJSON - %s", err),
@@ -74,7 +75,7 @@ func (c *commonUtilImpl) ToJSON(data interface{}) string {
 
 // Lat, lng in degree and output is distance in km
 func (c *commonUtilImpl) GetHaversineDistance(lat1, lng1, lat2, lng2 float64) float64 {
-    const EarthRadius = 6371
+	const EarthRadius = 6371
 
 	toRad := func(deg float64) float64 {
 		return deg * math.Pi / 180
@@ -87,7 +88,7 @@ func (c *commonUtilImpl) GetHaversineDistance(lat1, lng1, lat2, lng2 float64) fl
 	lat2Rad := toRad(lat2)
 
 	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
-		    math.Cos(lat1Rad)*math.Cos(lat2Rad)*math.Sin(deltaLng/2)*math.Sin(deltaLng/2)
+		math.Cos(lat1Rad)*math.Cos(lat2Rad)*math.Sin(deltaLng/2)*math.Sin(deltaLng/2)
 
 	d := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return EarthRadius * d

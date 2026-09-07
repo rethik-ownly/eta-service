@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+//go:generate mockgen -source=./repository.go -destination=./repository_mock.go -package=repository
 type Repository interface {
 	FetchRestaurantComponents(restaurantId string, day constants.Day, mealType constants.MealType) (*types.RestaurantComponents, error)
 	FetchSublocalityComponents(sublocalityId string, day constants.Day, mealType constants.MealType) (*types.SublocalityComponents, error)
