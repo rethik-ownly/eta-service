@@ -108,10 +108,10 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, h.httpUtils.BuildSuccessResponse(resp))
 }
 
-func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
+func (h *Handler) InsertRestaurantComponents(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
-	var restaurantEstimates types.InsertRestaurantEstimateRequest
+	var restaurantEstimates types.InsertRestaurantComponentsRequest
 
 	if err := ctx.ShouldBindJSON(&restaurantEstimates); err != nil {
 		logger.Error(logger.Format{
@@ -127,7 +127,7 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.validator.ValidateInsertRestaurantEstimateRequest(&restaurantEstimates); err != nil {
+	if err := h.validator.ValidateInsertRestaurantComponentsRequest(&restaurantEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "VALIDATE_INSERT_RESTAURANT_ESTIMATE_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
@@ -141,7 +141,7 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.InsertRestaurantEstimates(&restaurantEstimates)
+	err := h.service.InsertRestaurantComponents(&restaurantEstimates)
 
 	if err != nil {
 		logger.Error(logger.Format{
@@ -163,10 +163,10 @@ func (h *Handler) InsertRestaurantEstimates(ctx *gin.Context) {
 	}))
 }
 
-func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
+func (h *Handler) InsertSublocalityComponents(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
-	var sublocalityEstimates types.InsertSublocalityEstimateRequest
+	var sublocalityEstimates types.InsertSublocalityComponentsRequest
 
 	if err := ctx.ShouldBindJSON(&sublocalityEstimates); err != nil {
 		logger.Error(logger.Format{
@@ -182,7 +182,7 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.validator.ValidateInsertSublocalityEstimateRequest(&sublocalityEstimates); err != nil {
+	if err := h.validator.ValidateInsertSublocalityComponentsRequest(&sublocalityEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "VALIDATE_INSERT_SUBLOCALITY_ESTIMATE_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
@@ -196,7 +196,7 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.InsertSublocalityEstimates(&sublocalityEstimates)
+	err := h.service.InsertSublocalityComponents(&sublocalityEstimates)
 
 	if err != nil {
 		logger.Error(logger.Format{
@@ -218,12 +218,12 @@ func (h *Handler) InsertSublocalityEstimates(ctx *gin.Context) {
 	}))
 }
 
-func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
+func (h *Handler) UpdateRestaurantComponents(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 	restaurantId := ctx.Param("restaurantId")
 
-	var restaurantEstimates types.UpdateRestaurantEstimateRequest
+	var restaurantEstimates types.UpdateRestaurantComponentsRequest
 	if err := ctx.ShouldBindJSON(&restaurantEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "BIND_UPDATE_RESTAURANT_ESTIMATE_REQUEST",
@@ -238,7 +238,7 @@ func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.validator.ValidateUpdateRestaurantEstimates(restaurantId, &restaurantEstimates); err != nil {
+	if err := h.validator.ValidateUpdateRestaurantComponents(restaurantId, &restaurantEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "VALIDATE_UPDATE_RESTAURANT_ESTIMATE_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
@@ -252,7 +252,7 @@ func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.UpdateRestaurantEstimates(restaurantId, &restaurantEstimates)
+	err := h.service.UpdateRestaurantComponents(restaurantId, &restaurantEstimates)
 
 	if err != nil {
 		logger.Error(logger.Format{
@@ -274,12 +274,12 @@ func (h *Handler) UpdateRestaurantEstimates(ctx *gin.Context) {
 	}))
 }
 
-func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
+func (h *Handler) UpdateSublocalityComponents(ctx *gin.Context) {
 	method := ctx.Request.Method
 	route := ctx.FullPath()
 	sublocalityId := ctx.Param("sublocalityId")
 
-	var sublocalityEstimates types.UpdateSublocalityEstimateRequest
+	var sublocalityEstimates types.UpdateSublocalityComponentsRequest
 	if err := ctx.ShouldBindJSON(&sublocalityEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "BIND_UPDATE_SUBLOCALITY_ESTIMATE_REQUEST",
@@ -294,7 +294,7 @@ func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.validator.ValidateUpdateSublocalityEstimates(sublocalityId, &sublocalityEstimates); err != nil {
+	if err := h.validator.ValidateUpdateSublocalityComponents(sublocalityId, &sublocalityEstimates); err != nil {
 		logger.Error(logger.Format{
 			Event:   "VALIDATE_UPDATE_SUBLOCALITY_ESTIMATE_REQUEST",
 			Message: fmt.Sprintf("error validating request with err: %v", err),
@@ -308,7 +308,7 @@ func (h *Handler) UpdateSublocalityEstimates(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.UpdateSublocalityEstimates(sublocalityId, &sublocalityEstimates)
+	err := h.service.UpdateSublocalityComponents(sublocalityId, &sublocalityEstimates)
 
 	if err != nil {
 		logger.Error(logger.Format{

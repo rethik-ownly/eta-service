@@ -2,10 +2,6 @@ package main
 
 import (
 	"github.com/nutanalabs/eta-service/internal/config"
-	// etaservice "github.com/nutanalabs/eta-service/internal/eta-service"
-	// "github.com/nutanalabs/eta-service/internal/eta-service/repository"
-	// "github.com/nutanalabs/eta-service/internal/eta-service/service"
-	// "github.com/nutanalabs/eta-service/internal/server"
 	logger "github.com/nutanalabs/rapido-logger-go"
 	"github.com/spf13/cobra"
 )

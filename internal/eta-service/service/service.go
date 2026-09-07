@@ -15,11 +15,11 @@ import (
 
 type Service interface {
 	FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error)
-	InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error
-	InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error
+	InsertRestaurantComponents(request *types.InsertRestaurantComponentsRequest) error
+	InsertSublocalityComponents(request *types.InsertSublocalityComponentsRequest) error
 
-	UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error
-	UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error
+	UpdateRestaurantComponents(restaurantId string, request *types.UpdateRestaurantComponentsRequest) error
+	UpdateSublocalityComponents(sublocalityId string, request *types.UpdateSublocalityComponentsRequest) error
 }
 
 type serviceImpl struct {
@@ -49,17 +49,17 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 
 	sources, restaurantIDs := extractRestaurantLocationsAndIDs(request.Entities)
 
-	estimatesByRestaurant, restaurantEstimates, restaurantFailed := s.loadRestaurantEstimates(restaurantIDs, day, mealType, batchSize)
-	estimatesBySublocality, sublocalityFailed := s.loadSublocalityEstimates(restaurantEstimates, day, mealType, batchSize, restaurantFailed)
+	componentsByRestaurant, restaurantComponents, restaurantFailed := s.loadRestaurantComponents(restaurantIDs, day, mealType, batchSize)
+	componentsBySublocality, sublocalityFailed := s.loadSublocalityComponents(restaurantComponents, day, mealType, batchSize, restaurantFailed)
 
 	distanceMatrix, routingFailed := s.loadRoutingDistanceMatrix(request, sources)
 
 	response := make([]types.FetchEtaResponse, 0, len(request.Entities))
 	for i, entity := range request.Entities {
-		rest, restFallback := s.resolveRestaurantMealEstimate(entity.RestaurantID, mealType, estimatesByRestaurant, restaurantFailed)
+		rest, restFallback := s.resolveRestaurantMealComponents(entity.RestaurantID, mealType, componentsByRestaurant, restaurantFailed)
 
-		sublocalityID := restaurantSublocalityID(entity.RestaurantID, estimatesByRestaurant, restaurantFailed)
-		sub, subFallback := s.resolveSublocalityMealEstimate(sublocalityID, mealType, estimatesBySublocality, sublocalityFailed)
+		sublocalityID := restaurantSublocalityID(entity.RestaurantID, componentsByRestaurant, restaurantFailed)
+		sub, subFallback := s.resolveSublocalityMealComponents(sublocalityID, mealType, componentsBySublocality, sublocalityFailed)
 
 		lastMile := s.calculateLastMileDurationSeconds(request.UserLocation, entity.RestaurantLocation, distanceMatrix, routingFailed, i)
 		kitchenOrDispatch := max(rest.Kpt.Seconds, sub.Cat.Seconds+sub.Fm.Seconds+rest.Pickup.Seconds+rest.DelayDispatch.Seconds)
@@ -76,40 +76,40 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	return response, nil
 }
 
-func (s *serviceImpl) InsertRestaurantEstimates(request *types.InsertRestaurantEstimateRequest) error {
+func (s *serviceImpl) InsertRestaurantComponents(request *types.InsertRestaurantComponentsRequest) error {
 	overlaps, err := s.repository.RestaurantDayOverlapExists(request.RestaurantId, request.DayType)
 	if err != nil {
-		return fmt.Errorf("checking existing restaurant estimate failed: %w", err)
+		return fmt.Errorf("checking existing restaurant components failed: %w", err)
 	}
 	if overlaps {
-		return types.NewConflictError(fmt.Sprintf("restaurant estimate already exists for one or more of restaurantId=%s dayType=%v", request.RestaurantId, request.DayType))
+		return types.NewConflictError(fmt.Sprintf("restaurant components already exist for one or more of restaurantId=%s dayType=%v", request.RestaurantId, request.DayType))
 	}
 
 	request.UpdatedAt = float64(time.Now().Unix())
-	return s.repository.InsertRestaurantEstimates(request)
+	return s.repository.InsertRestaurantComponents(request)
 }
 
-func (s *serviceImpl) InsertSublocalityEstimates(request *types.InsertSublocalityEstimateRequest) error {
+func (s *serviceImpl) InsertSublocalityComponents(request *types.InsertSublocalityComponentsRequest) error {
 	overlaps, err := s.repository.SublocalityDayOverlapExists(request.SublocalityId, request.DayType)
 	if err != nil {
-		return fmt.Errorf("checking existing sublocality estimate failed: %w", err)
+		return fmt.Errorf("checking existing sublocality components failed: %w", err)
 	}
 	if overlaps {
-		return types.NewConflictError(fmt.Sprintf("sublocality estimate already exists for one or more of sublocalityId=%s dayType=%v", request.SublocalityId, request.DayType))
+		return types.NewConflictError(fmt.Sprintf("sublocality components already exist for one or more of sublocalityId=%s dayType=%v", request.SublocalityId, request.DayType))
 	}
 
 	request.UpdatedAt = float64(time.Now().Unix())
-	return s.repository.InsertSublocalityEstimates(request)
+	return s.repository.InsertSublocalityComponents(request)
 }
 
-func (s *serviceImpl) UpdateRestaurantEstimates(restaurantId string, request *types.UpdateRestaurantEstimateRequest) error {
+func (s *serviceImpl) UpdateRestaurantComponents(restaurantId string, request *types.UpdateRestaurantComponentsRequest) error {
 	request.UpdatedAt = float64(time.Now().Unix())
-	return s.repository.UpdateRestaurantEstimates(restaurantId, request)
+	return s.repository.UpdateRestaurantComponents(restaurantId, request)
 }
 
-func (s *serviceImpl) UpdateSublocalityEstimates(sublocalityId string, request *types.UpdateSublocalityEstimateRequest) error {
+func (s *serviceImpl) UpdateSublocalityComponents(sublocalityId string, request *types.UpdateSublocalityComponentsRequest) error {
 	request.UpdatedAt = float64(time.Now().Unix())
-	return s.repository.UpdateSublocalityEstimates(sublocalityId, request)
+	return s.repository.UpdateSublocalityComponents(sublocalityId, request)
 }
 
 // FetchEta helpers
@@ -124,44 +124,44 @@ func extractRestaurantLocationsAndIDs(entities []types.FetchEtaRequestEntity) ([
 	return sources, ids
 }
 
-func (s *serviceImpl) loadRestaurantEstimates(
+func (s *serviceImpl) loadRestaurantComponents(
 	restaurantIDs []string,
 	day constants.Day,
 	mealType constants.MealType,
 	batchSize int,
-) (map[string]types.EtaRestaurantEstimates, []types.EtaRestaurantEstimates, bool) {
-	estimates, err := s.repository.FetchRestaurantEstimatesByIDs(restaurantIDs, day, mealType, batchSize)
+) (map[string]types.RestaurantComponents, []types.RestaurantComponents, bool) {
+	components, err := s.repository.FetchRestaurantComponentsByIDs(restaurantIDs, day, mealType, batchSize)
 	if err != nil {
 		return nil, nil, true
 	}
 
-	byID := make(map[string]types.EtaRestaurantEstimates, len(estimates))
-	for _, e := range estimates {
-		byID[e.RestaurantId] = e
+	byID := make(map[string]types.RestaurantComponents, len(components))
+	for _, c := range components {
+		byID[c.RestaurantId] = c
 	}
-	return byID, estimates, false
+	return byID, components, false
 }
 
-func (s *serviceImpl) loadSublocalityEstimates(
-	restaurantEstimates []types.EtaRestaurantEstimates,
+func (s *serviceImpl) loadSublocalityComponents(
+	restaurantComponents []types.RestaurantComponents,
 	day constants.Day,
 	mealType constants.MealType,
 	batchSize int,
 	restaurantFailed bool,
-) (map[string]types.EtaSublocalityEstimates, bool) {
+) (map[string]types.SublocalityComponents, bool) {
 	if restaurantFailed {
 		return nil, true
 	}
 
-	sublocalityIDs := uniqueSublocalityIDs(restaurantEstimates)
-	estimates, err := s.repository.FetchSublocalityEstimatesByIDs(sublocalityIDs, day, mealType, batchSize)
+	sublocalityIDs := uniqueSublocalityIDs(restaurantComponents)
+	components, err := s.repository.FetchSublocalityComponentsByIDs(sublocalityIDs, day, mealType, batchSize)
 	if err != nil {
 		return nil, true
 	}
 
-	byID := make(map[string]types.EtaSublocalityEstimates, len(estimates))
-	for _, e := range estimates {
-		byID[e.SublocalityId] = e
+	byID := make(map[string]types.SublocalityComponents, len(components))
+	for _, c := range components {
+		byID[c.SublocalityId] = c
 	}
 	return byID, false
 }
@@ -183,13 +183,13 @@ func (s *serviceImpl) loadRoutingDistanceMatrix(
 
 func restaurantSublocalityID(
 	restaurantID string,
-	estimatesByRestaurant map[string]types.EtaRestaurantEstimates,
+	componentsByRestaurant map[string]types.RestaurantComponents,
 	restaurantFailed bool,
 ) string {
 	if restaurantFailed {
 		return ""
 	}
-	return estimatesByRestaurant[restaurantID].SublocalityId
+	return componentsByRestaurant[restaurantID].SublocalityId
 }
 
 func (s *serviceImpl) calculateLastMileDurationSeconds(
@@ -208,9 +208,9 @@ func (s *serviceImpl) calculateLastMileDurationSeconds(
 	return distanceMatrix.Data[index][0].Duration.Value
 }
 
-func (s *serviceImpl) defaultRestaurantMealEstimate() types.RestaurantMealEstimate {
+func (s *serviceImpl) defaultRestaurantMealComponents() types.RestaurantMealComponents {
 	d := s.config.EtaDefaultEstimates
-	return types.RestaurantMealEstimate{
+	return types.RestaurantMealComponents{
 		Rat:           types.TimeSample{Seconds: float64(d.RestaurantAcceptanceTime)},
 		Kpt:           types.TimeSample{Seconds: float64(d.KitchenPreparationTime)},
 		Pickup:        types.TimeSample{Seconds: float64(d.PickupTime)},
@@ -218,43 +218,43 @@ func (s *serviceImpl) defaultRestaurantMealEstimate() types.RestaurantMealEstima
 	}
 }
 
-func (s *serviceImpl) defaultSublocalityMealEstimate() types.SublocalityMealEstimate {
+func (s *serviceImpl) defaultSublocalityMealComponents() types.SublocalityMealComponents {
 	d := s.config.EtaDefaultEstimates
-	return types.SublocalityMealEstimate{
+	return types.SublocalityMealComponents{
 		Cat: types.TimeSample{Seconds: float64(d.CaptainAssignmentTime)},
 		Fm:  types.TimeSample{Seconds: float64(d.FirstMileTime)},
 	}
 }
 
-func hasRestaurantMealSamples(meal types.RestaurantMealEstimate) bool {
+func hasRestaurantMealSamples(meal types.RestaurantMealComponents) bool {
 	return meal.Rat.SampleCount > 0 ||
 		meal.Kpt.SampleCount > 0 ||
 		meal.Pickup.SampleCount > 0 ||
 		meal.DelayDispatch.SampleCount > 0
 }
 
-func hasSublocalityMealSamples(meal types.SublocalityMealEstimate) bool {
+func hasSublocalityMealSamples(meal types.SublocalityMealComponents) bool {
 	return meal.Cat.SampleCount > 0 || meal.Fm.SampleCount > 0
 }
 
-func (s *serviceImpl) resolveRestaurantMealEstimate(
+func (s *serviceImpl) resolveRestaurantMealComponents(
 	restaurantID string,
 	mealType constants.MealType,
-	estimatesByRestaurant map[string]types.EtaRestaurantEstimates,
+	componentsByRestaurant map[string]types.RestaurantComponents,
 	restaurantMongoFailed bool,
-) (types.RestaurantMealEstimate, bool) {
-	defaults := s.defaultRestaurantMealEstimate()
+) (types.RestaurantMealComponents, bool) {
+	defaults := s.defaultRestaurantMealComponents()
 
 	if restaurantMongoFailed {
 		return defaults, true
 	}
 
-	restaurantEstimates, ok := estimatesByRestaurant[restaurantID]
+	restaurantComponents, ok := componentsByRestaurant[restaurantID]
 	if !ok {
 		return defaults, true
 	}
 
-	meal := restaurantEstimates.MealSection(mealType)
+	meal := restaurantComponents.MealSection(mealType)
 	if !hasRestaurantMealSamples(meal) {
 		return defaults, true
 	}
@@ -262,13 +262,13 @@ func (s *serviceImpl) resolveRestaurantMealEstimate(
 	return meal, false
 }
 
-func (s *serviceImpl) resolveSublocalityMealEstimate(
+func (s *serviceImpl) resolveSublocalityMealComponents(
 	sublocalityID string,
 	mealType constants.MealType,
-	estimatesBySublocality map[string]types.EtaSublocalityEstimates,
+	componentsBySublocality map[string]types.SublocalityComponents,
 	sublocalityMongoFailed bool,
-) (types.SublocalityMealEstimate, bool) {
-	defaults := s.defaultSublocalityMealEstimate()
+) (types.SublocalityMealComponents, bool) {
+	defaults := s.defaultSublocalityMealComponents()
 
 	if sublocalityMongoFailed {
 		return defaults, true
@@ -278,12 +278,12 @@ func (s *serviceImpl) resolveSublocalityMealEstimate(
 		return defaults, true
 	}
 
-	sublocalityEstimates, ok := estimatesBySublocality[sublocalityID]
+	sublocalityComponents, ok := componentsBySublocality[sublocalityID]
 	if !ok {
 		return defaults, true
 	}
 
-	meal := sublocalityEstimates.MealSection(mealType)
+	meal := sublocalityComponents.MealSection(mealType)
 	if !hasSublocalityMealSamples(meal) {
 		return defaults, true
 	}
@@ -298,9 +298,9 @@ func resolveEtaSource(usedFallback bool) string {
 	return constants.EtaSourceHistoric
 }
 
-func uniqueSublocalityIDs(restaurantsEstimates []types.EtaRestaurantEstimates) []string {
-	seen := make(map[string]struct{}, len(restaurantsEstimates))
-	for _, value := range restaurantsEstimates {
+func uniqueSublocalityIDs(restaurantComponents []types.RestaurantComponents) []string {
+	seen := make(map[string]struct{}, len(restaurantComponents))
+	for _, value := range restaurantComponents {
 		seen[value.SublocalityId] = struct{}{}
 	}
 

@@ -23,7 +23,7 @@ func NewHttpUtils() HTTPUtils {
 }
 
 func (hu *httpUtilsImpl) ParseErrorResponse(err error) types.HTTPResponse {
-	var errorReponse errorhandler.ResponseError
+	var errorReponse *errorhandler.ResponseError
 
 	if !errors.As(err, &errorReponse) {
 		return types.HTTPResponse{
@@ -33,8 +33,8 @@ func (hu *httpUtilsImpl) ParseErrorResponse(err error) types.HTTPResponse {
 	}
 
 	return types.HTTPResponse{
-		StatusCode: hu.FetchErrorStatusCode(&errorReponse),
-		Body: hu.FetchErrorBody(&errorReponse),
+		StatusCode: hu.FetchErrorStatusCode(errorReponse),
+		Body: hu.FetchErrorBody(errorReponse),
 	}
 
 }
