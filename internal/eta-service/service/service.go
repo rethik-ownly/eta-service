@@ -13,6 +13,7 @@ import (
 	logger "github.com/nutanalabs/rapido-logger-go"
 )
 
+//go:generate mockgen -source=./service.go -destination=./service_mock.go -package=service
 type Service interface {
 	FetchEta(request *types.FetchEtaRequest) ([]types.FetchEtaResponse, error)
 	InsertRestaurantComponents(request *types.InsertRestaurantComponentsRequest) error

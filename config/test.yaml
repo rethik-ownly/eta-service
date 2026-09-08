@@ -67,10 +67,10 @@ kafka:
   isConsumerHealthCheckEnabled: true
   consumersEnabled: true
   bootstrapServers: localhost:9092
-  groupID: eta-service-group
+  groupId: eta-service-group
   autoOffsetReset: latest
   enableAutoCommit: false
-  sessionTimeout: 10000
+  sessionTimeoutInMs: 10000
   lingerIntervalInMs: 0
   batchSizeInBytes: 1048576
   shadowEventsEnabled: true

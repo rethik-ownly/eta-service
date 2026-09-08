@@ -55,3 +55,24 @@ externalServices:
 
 eta:
   maxEntities: {{ key "rapido/eta-service/eta/maxEntities" }}
+
+kafka:
+  isProducerHealthCheckEnabled: {{ key "rapido/eta-service/kafka/isProducerHealthCheckEnabled" }}
+  isConsumerHealthCheckEnabled: {{ key "rapido/eta-service/kafka/isConsumerHealthCheckEnabled" }}
+  consumersEnabled: {{ key "rapido/eta-service/kafka/consumersEnabled" }}
+  bootstrapServers: {{ key "rapido/kafka/broker/hosts" }}
+  groupId: {{ key "rapido/eta-service/kafka/groupId" }}
+  autoOffsetReset: {{ key "rapido/eta-service/kafka/autoOffsetReset" }}
+  enableAutoCommit: {{ key "rapido/eta-service/kafka/enableAutoCommit" }}
+  sessionTimeoutInMs: {{ key "rapido/eta-service/kafka/sessionTimeoutInMs" }}
+  lingerIntervalInMs: {{ key "rapido/eta-service/kafka/lingerIntervalInMs" }}
+  batchSizeInBytes: {{ key "rapido/eta-service/kafka/batchSizeInBytes" }}
+  shadowEventsEnabled: {{ key "rapido/eta-service/kafka/shadowEventsEnabled" }}
+
+etaDefaultEstimates:
+  restaurantAcceptanceTime: {{ key "rapido/eta-service/etaDefaultEstimates/restaurantAcceptanceTime" }}
+  captainAssignmentTime: {{ key "rapido/eta-service/etaDefaultEstimates/captainAssignmentTime" }}
+  firstMileTime: {{ key "rapido/eta-service/etaDefaultEstimates/firstMileTime" }}
+  delayDispatchTime: {{ key "rapido/eta-service/etaDefaultEstimates/delayDispatchTime" }}
+  kitchenPreparationTime: {{ key "rapido/eta-service/etaDefaultEstimates/kitchenPreparationTime" }}
+  pickupTime: {{ key "rapido/eta-service/etaDefaultEstimates/pickupTime" }}
