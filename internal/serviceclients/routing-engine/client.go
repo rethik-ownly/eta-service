@@ -11,19 +11,20 @@ import (
 	"github.com/nutanalabs/rapido-http-go/v3/httpclient"
 )
 
+//go:generate mockgen -source=./client.go -destination=./client_mock.go -package=routingengine
 type RoutingEngineClient interface {
 	GetDistanceMatrix(request *DistanceMatrixRequest) (*DistanceMatrixResponse, error)
 	GetDistanceMatrixWithQoS(request *DistanceMatrixRequest, qos constants.QosLevel) (*DistanceMatrixResponse, error)
 }
 
 type routingEngineClientImpl struct {
-	config *config.Config
+	config     *config.Config
 	httpClient httpclient.Client
 }
 
 func NewRoutingEngineClient(config *config.Config, httpClient httpclient.Client) RoutingEngineClient {
 	return &routingEngineClientImpl{
-		config: config,
+		config:     config,
 		httpClient: httpClient,
 	}
 }
@@ -67,9 +68,9 @@ func (rec *routingEngineClientImpl) GetDistanceMatrixWithQoS(request *DistanceMa
 		SetHeader("content-type", "application/json").
 		SetURL(routingEngineURL).
 		SetBody(requestBody).
-		SetMaxTimeout(time.Duration(rec.config.ExternalServices.RoutingEngine.DistanceMatrixAPI.TimeoutInMs)*time.Millisecond).
+		SetMaxTimeout(time.Duration(rec.config.ExternalServices.RoutingEngine.DistanceMatrixAPI.TimeoutInMs) * time.Millisecond).
 		Build()
-	
+
 	httpResponse, err := httpRequest.Post(context.Background(), rec.httpClient)
 
 	if err != nil {
