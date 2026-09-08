@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/nutanalabs/eta-service/internal/config"
@@ -36,7 +37,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.svc = NewService(s.repoMock, s.commonUtilsMock, s.routingClientMock, s.config)
 }
 
-func (s *ServiceTestSuite) TestFetchEta() {
+func (s *ServiceTestSuite) TestFetchEta_HappyPath_ReturnsHistoricEta() {
 	// Arrange
 	request := &types.FetchEtaRequest{
 		Surface:      "Search",
@@ -125,10 +126,349 @@ func (s *ServiceTestSuite) TestFetchEta() {
 
 	// Assert
 	s.Require().NoError(err)
+	s.Require().Len(response, 1)
 	s.Equal("rest-1", response[0].RestaurantID)
 	s.Equal(uint(1600), response[0].EtaInSeconds)
 	s.Equal(constants.EtaSourceHistoric, response[0].Source)
 }
+
+func (s *ServiceTestSuite) TestFetchEta_RoutingFails_UsesHaversineFallback() {
+	request := &types.FetchEtaRequest{
+		Surface:      "Search",
+		DeliveryType: "Standard",
+		UserID:       "1234",
+		UserLocation: types.Location{
+			Lat: 12.9716,
+			Lng: 77.5946,
+		},
+		Options: types.FetchEtaRequestOptions{
+			QosLevel: "qos3",
+		},
+		Entities: []types.FetchEtaRequestEntity{
+			{
+				RestaurantID:       "rest-1",
+				RestaurantLocation: types.Location{Lat: 12.9352, Lng: 77.6245},
+			},
+		},
+	}
+
+	s.commonUtilsMock.EXPECT().GetDayFromTime(gomock.Any()).Return(constants.Monday).Times(1)
+	s.commonUtilsMock.EXPECT().GetMealTypeFromTime(gomock.Any()).Return(constants.Lunch).Times(1)
+
+	restaurantComponents := []types.RestaurantComponents{
+		{
+			RestaurantId:  "rest-1",
+			SublocalityId: "sub-1",
+			Lunch: types.RestaurantMealComponents{
+				Rat:           types.TimeSample{Seconds: 100, SampleCount: 10},
+				Kpt:           types.TimeSample{Seconds: 500, SampleCount: 10},
+				Pickup:        types.TimeSample{Seconds: 200, SampleCount: 10},
+				DelayDispatch: types.TimeSample{Seconds: 0, SampleCount: 10},
+			},
+		},
+	}
+
+	s.repoMock.
+		EXPECT().
+		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(restaurantComponents, nil).
+		Times(1)
+
+	sublocalityComponents := []types.SublocalityComponents{
+		{
+			SublocalityId: "sub-1",
+			Lunch: types.SublocalityMealComponents{
+				Cat: types.TimeSample{Seconds: 150, SampleCount: 10},
+				Fm:  types.TimeSample{Seconds: 250, SampleCount: 10},
+			},
+		},
+	}
+
+	s.repoMock.
+		EXPECT().
+		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(sublocalityComponents, nil).
+		Times(1)
+
+	// Routing FAILS → triggers Haversine fallback
+	s.routingClientMock.EXPECT().
+		GetDistanceMatrixWithQoS(gomock.Any(), constants.QosThree).
+		Return(nil, fmt.Errorf("routing engine down")).
+		Times(1)
+
+	haversineLastMileDistance := 2.5
+
+	s.commonUtilsMock.
+		EXPECT().
+		GetHaversineDistance(request.UserLocation.Lat, request.UserLocation.Lng, request.Entities[0].RestaurantLocation.Lat, request.Entities[0].RestaurantLocation.Lng).
+		Return(haversineLastMileDistance).
+		Times(1)
+
+	s.repoMock.
+		EXPECT().
+		PublishFetchEtaEvent(constants.EventTypeNewEta, gomock.Any(), gomock.Any(), nil).
+		Times(1)
+
+	response, err := s.svc.FetchEta(request)
+
+	s.Require().NoError(err)
+	s.Require().Len(response, 1)
+	s.Equal("rest-1", response[0].RestaurantID)
+	s.Equal(uint(1600), response[0].EtaInSeconds)
+	s.Equal(constants.EtaSourceFallback, response[0].Source)
+}
+
+func (s *ServiceTestSuite) TestFetchEta_RestaurantMongoFails_UsesDefaultEstimates() {
+	request := &types.FetchEtaRequest{
+		Surface:      "Search",
+		DeliveryType: "Standard",
+		UserID:       "1234",
+		UserLocation: types.Location{
+			Lat: 12.9716,
+			Lng: 77.5946,
+		},
+		Options: types.FetchEtaRequestOptions{
+			QosLevel: "qos3",
+		},
+		Entities: []types.FetchEtaRequestEntity{
+			{
+				RestaurantID:       "rest-1",
+				RestaurantLocation: types.Location{Lat: 12.9352, Lng: 77.6245},
+			},
+		},
+	}
+
+	s.commonUtilsMock.EXPECT().GetDayFromTime(gomock.Any()).Return(constants.Monday).Times(1)
+	s.commonUtilsMock.EXPECT().GetMealTypeFromTime(gomock.Any()).Return(constants.Lunch).Times(1)
+
+	s.repoMock.
+		EXPECT().
+		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(nil, fmt.Errorf("restaurant mongo query fails")).
+		Times(1)
+	
+	distanceMatrixResponse := &routingengine.DistanceMatrixResponse{
+		Data: [][]routingengine.MatrixElement{
+			{
+				{
+					Duration: routingengine.DurationInfo{Value: 900, Unit: "seconds"},
+				},
+			},
+		},
+	}
+
+	s.routingClientMock.
+		EXPECT().
+		GetDistanceMatrixWithQoS(gomock.Any(), constants.QosThree).
+		Return(distanceMatrixResponse, nil).
+		Times(1)
+
+	s.repoMock.EXPECT().
+		PublishFetchEtaEvent(
+			constants.EventTypeNewEta,
+			gomock.Any(),
+			gomock.Any(),
+			nil,
+		).
+		Times(1)
+	
+	response, err := s.svc.FetchEta(request)
+
+	s.Require().NoError(err)
+	s.Require().Len(response, 1)
+	s.Equal("rest-1", response[0].RestaurantID)
+	s.Equal(uint(2280), response[0].EtaInSeconds)
+	s.Equal(constants.EtaSourceFallback, response[0].Source)
+}
+
+func (s *ServiceTestSuite) TestFetchEta_SublocalityMongoFails_UsesDefaultSublocalityEstimates() {
+	request := &types.FetchEtaRequest{
+		Surface:      "Search",
+		DeliveryType: "Standard",
+		UserID:       "1234",
+		UserLocation: types.Location{
+			Lat: 12.9716,
+			Lng: 77.5946,
+		},
+		Options: types.FetchEtaRequestOptions{
+			QosLevel: "qos3",
+		},
+		Entities: []types.FetchEtaRequestEntity{
+			{
+				RestaurantID:       "rest-1",
+				RestaurantLocation: types.Location{Lat: 12.9352, Lng: 77.6245},
+			},
+		},
+	}
+
+	s.commonUtilsMock.EXPECT().GetDayFromTime(gomock.Any()).Return(constants.Monday).Times(1)
+	s.commonUtilsMock.EXPECT().GetMealTypeFromTime(gomock.Any()).Return(constants.Lunch).Times(1)
+
+	restaurantComponents := []types.RestaurantComponents{
+		{
+			RestaurantId:  "rest-1",
+			SublocalityId: "sub-1",
+			Lunch: types.RestaurantMealComponents{
+				Rat:           types.TimeSample{Seconds: 100, SampleCount: 10},
+				Kpt:           types.TimeSample{Seconds: 500, SampleCount: 10},
+				Pickup:        types.TimeSample{Seconds: 200, SampleCount: 10},
+				DelayDispatch: types.TimeSample{Seconds: 0, SampleCount: 10},
+			},
+		},
+	}
+
+	s.repoMock.
+		EXPECT().
+		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(restaurantComponents, nil).
+		Times(1)
+
+	s.repoMock.
+		EXPECT().
+		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(nil, fmt.Errorf("sublocality mongo query fails")).
+		Times(1)
+
+	distanceMatrixResponse := &routingengine.DistanceMatrixResponse{
+		Data: [][]routingengine.MatrixElement{
+			{
+				{
+					Duration: routingengine.DurationInfo{Value: 900, Unit: "seconds"},
+				},
+			},
+		},
+	}
+
+	s.routingClientMock.
+		EXPECT().
+		GetDistanceMatrixWithQoS(gomock.Any(), constants.QosThree).
+		Return(distanceMatrixResponse, nil).
+		Times(1)
+
+	s.repoMock.EXPECT().
+		PublishFetchEtaEvent(
+			constants.EventTypeNewEta,
+			gomock.Any(),
+			gomock.Any(),
+			nil,
+		).
+		Times(1)
+
+	response, err := s.svc.FetchEta(request)
+
+	s.Require().NoError(err)
+	s.Require().Len(response, 1)
+	s.Equal("rest-1", response[0].RestaurantID)
+	// RAT(100) + max(KPT=500, (default CAT+FM)+Pickup+Delay=680) + lastMile(900) = 1680
+	s.Equal(uint(1680), response[0].EtaInSeconds)
+	s.Equal(constants.EtaSourceFallback, response[0].Source)
+}
+
+func (s *ServiceTestSuite) TestFetchEta_MultipleEntities_MixedFallbackSources() {
+	request := &types.FetchEtaRequest{
+		Surface:      "Search",
+		DeliveryType: "Standard",
+		UserID:       "1234",
+		UserLocation: types.Location{
+			Lat: 12.9716,
+			Lng: 77.5946,
+		},
+		Options: types.FetchEtaRequestOptions{
+			QosLevel: "qos3",
+		},
+		Entities: []types.FetchEtaRequestEntity{
+			{
+				RestaurantID:       "rest-1",
+				RestaurantLocation: types.Location{Lat: 12.9352, Lng: 77.6245},
+			},
+			{
+				RestaurantID:       "rest-2",
+				RestaurantLocation: types.Location{Lat: 12.9300, Lng: 77.6200},
+			},
+		},
+	}
+
+	s.commonUtilsMock.EXPECT().GetDayFromTime(gomock.Any()).Return(constants.Monday).Times(1)
+	s.commonUtilsMock.EXPECT().GetMealTypeFromTime(gomock.Any()).Return(constants.Lunch).Times(1)
+
+	// Batch succeeds but rest-2 is absent from results → per-entity fallback for rest-2 only.
+	restaurantComponents := []types.RestaurantComponents{
+		{
+			RestaurantId:  "rest-1",
+			SublocalityId: "sub-1",
+			Lunch: types.RestaurantMealComponents{
+				Rat:           types.TimeSample{Seconds: 100, SampleCount: 10},
+				Kpt:           types.TimeSample{Seconds: 500, SampleCount: 10},
+				Pickup:        types.TimeSample{Seconds: 200, SampleCount: 10},
+				DelayDispatch: types.TimeSample{Seconds: 0, SampleCount: 10},
+			},
+		},
+	}
+
+	s.repoMock.
+		EXPECT().
+		FetchRestaurantComponentsByIDs([]string{"rest-1", "rest-2"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(restaurantComponents, nil).
+		Times(1)
+
+	sublocalityComponents := []types.SublocalityComponents{
+		{
+			SublocalityId: "sub-1",
+			Lunch: types.SublocalityMealComponents{
+				Cat: types.TimeSample{Seconds: 150, SampleCount: 10},
+				Fm:  types.TimeSample{Seconds: 250, SampleCount: 10},
+			},
+		},
+	}
+
+	s.repoMock.
+		EXPECT().
+		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		Return(sublocalityComponents, nil).
+		Times(1)
+
+	distanceMatrixResponse := &routingengine.DistanceMatrixResponse{
+		Data: [][]routingengine.MatrixElement{
+			{
+				{Duration: routingengine.DurationInfo{Value: 900, Unit: "seconds"}},
+			},
+			{
+				{Duration: routingengine.DurationInfo{Value: 1200, Unit: "seconds"}},
+			},
+		},
+	}
+
+	s.routingClientMock.
+		EXPECT().
+		GetDistanceMatrixWithQoS(gomock.Any(), constants.QosThree).
+		Return(distanceMatrixResponse, nil).
+		Times(1)
+
+	s.repoMock.EXPECT().
+		PublishFetchEtaEvent(
+			constants.EventTypeNewEta,
+			gomock.Any(),
+			gomock.Any(),
+			nil,
+		).
+		Times(1)
+
+	response, err := s.svc.FetchEta(request)
+
+	s.Require().NoError(err)
+	s.Require().Len(response, 2)
+
+	// rest-1: historic Mongo + routing row 0
+	s.Equal("rest-1", response[0].RestaurantID)
+	s.Equal(uint(1600), response[0].EtaInSeconds) // 100 + max(500, 600) + 900
+	s.Equal(constants.EtaSourceHistoric, response[0].Source)
+
+	// rest-2: default estimates + routing row 1
+	s.Equal("rest-2", response[1].RestaurantID)
+	s.Equal(uint(2580), response[1].EtaInSeconds) // 300 + max(900, 1080) + 1200
+	s.Equal(constants.EtaSourceFallback, response[1].Source)
+}
+
 
 func TestServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(ServiceTestSuite))
