@@ -1,0 +1,43 @@
+canary:
+  analysis:
+    interval: 1m
+    maxWeight: 30
+    stepWeight: 10
+  enabled: false
+  metrics:
+    thresholds:
+      latency: 1000
+      successRate: 99
+  skipAnalysis: false
+
+hardAntiPodAffinity: false
+environment: production
+
+hpa:
+  enabled: true
+  maxReplicas: 10
+  metrics:
+    cpu:
+      enabled: true
+      targetAverageUtilization: 75
+    memory:
+      enabled: true
+      targetAverageUtilization: 75
+  minReplicas: 2
+
+preemptible_workload: false
+replicaCount: 2
+
+resources:
+  enabled: true
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: "500m"
+    memory: 512Mi
+
+metrics:
+  enabled: true
+
+team: application-platform
