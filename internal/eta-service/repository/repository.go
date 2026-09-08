@@ -443,6 +443,7 @@ func fetchEtaRequestToAnalyticsEvent(eventType constants.EventType, request *typ
 
 	if request != nil {
 		event.RequestId = request.RequestId
+		event.OrderId = request.OrderId
 		event.Surface = request.Surface
 		event.DeliveryType = request.DeliveryType
 		event.Request = *request
