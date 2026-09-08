@@ -53,20 +53,6 @@ func (h *Handler) FetchEta(ctx *gin.Context) {
 	}
 
 	requestId := ctx.GetHeader("x-request-id")
-	if requestId == "" {
-		logger.Error(logger.Format{
-			RequestID: requestId,
-			Event:     "VALIDATE_REQUEST_ID",
-			Message:   "missing mandatory request id",
-			Data: map[string]string{
-				"method": method,
-				"route":  route,
-			},
-		})
-		h.recordMetrics(startTime, method, route, fetchEtaRequest.Surface ,http.StatusBadRequest)
-		ctx.JSON(http.StatusBadRequest, h.httpUtils.BuildErrorResponse(types.NewBadRequestError("missing mandatory request id")))
-		return
-	}
 
 	fetchEtaRequest.OrderId = ctx.GetHeader("x-order-id")
 	fetchEtaRequest.RequestId = requestId
