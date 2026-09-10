@@ -5,6 +5,7 @@ import (
 
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/constants"
+	"github.com/nutanalabs/eta-service/internal/dataclients/kafka"
 	"github.com/nutanalabs/eta-service/internal/dataclients/mongo"
 	"github.com/nutanalabs/eta-service/internal/types"
 	logger "github.com/nutanalabs/rapido-logger-go"
@@ -18,12 +19,14 @@ type DataClients interface {
 type dataClientsImpl struct {
 	config *config.Config
 	mongodbClient mongo.Client
+	kafkaProducerClient kafka.ProducerClient
 }
 
-func NewDataClients(config *config.Config, mongodbClient mongo.Client) DataClients {
+func NewDataClients(config *config.Config, mongodbClient mongo.Client, kafkaProducerClient kafka.ProducerClient) DataClients {
 	return &dataClientsImpl{
-		config: config,
-		mongodbClient: mongodbClient,
+		config:              config,
+		mongodbClient:       mongodbClient,
+		kafkaProducerClient: kafkaProducerClient,
 	}
 }
 
@@ -41,6 +44,14 @@ func (dc *dataClientsImpl) Stop() {
 		Message: "mongoDB connection closed successfully",
 	})
 
+	if dc.kafkaProducerClient != nil {
+		dc.kafkaProducerClient.Close()
+		logger.Info(logger.Format{
+			Event:   "CLOSE_KAFKA_PRODUCER",
+			Message: "Kafka producer closed successfully",
+		})
+	}
+
 	// TODO : Stop Redis, kafkaConsumer
 }
 
@@ -55,6 +66,21 @@ func (dc *dataClientsImpl) CheckHealth() ([]types.HealthCheck, error) {
 			mongoDbHealthCheck.Status = constants.DOWN
 		}
 		healthCheckResponse = append(healthCheckResponse, mongoDbHealthCheck)
+	}
+
+	if dc.config.Kafka.IsProducerHealthCheckEnabled {
+		if dc.kafkaProducerClient != nil {
+			kafkaProducerHealthCheck := types.HealthCheck{Client: "KafkaProducer", Status: constants.UP}
+			if err := dc.kafkaProducerClient.CheckHealth(); err != nil {
+				healthCheckError = err
+				kafkaProducerHealthCheck.Status = constants.DOWN
+				logger.Error(logger.Format{
+					Event:   "KAFKA_PRODUCER_HEALTH_CHECK",
+					Message: fmt.Sprintf("Kafka health check failed with error: %v", err),
+				})
+			}
+			healthCheckResponse = append(healthCheckResponse, kafkaProducerHealthCheck)
+		}
 	}
 
 	// TODO : CheckHealth Redis, KafkaConsumer 

@@ -1,5 +1,6 @@
 package constants
 
 const (
-	ETA_COLLECTION_NAME string = "etaRestaurantEstimates"
+	RESTAURANT_COMPONENTS  string = "restaurant_components"
+	SUBLOCALITY_COMPONENTS string = "sublocality_components"
 )

@@ -68,11 +68,15 @@ func (c *clientImpl) CheckHealth() error {
 		})
 		return err
 	}
+	logger.Debug(logger.Format{
+		Event: "MONGO_DB_HEALTH_CHECK",
+		Message: "mongoDB health check is successful",
+	})
 	return nil
 }
 
 func (c *clientImpl) GetDatabase() *mongo.Database {
-	return c.client.Database(c.config.GetDatabase())
+	return c.client.Database(c.config.GetMongoDatabase())
 }
 
 func (c *clientImpl) Disconnect() error {

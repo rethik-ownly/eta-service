@@ -26,10 +26,9 @@ type repositoryImpl struct {
 	database *mongo.Database
 }
 
-
 func NewMongoRepository(config *config.Config, mongoClient Client) Repository {
 	return &repositoryImpl{
-		config:        config,
+		config:   config,
 		database: mongoClient.GetDatabase(),
 	}
 }
@@ -89,5 +88,3 @@ func (r *repositoryImpl) AggregatePipeline(collectionName string, pipeline inter
 	defer cancel()
 	return collection.Aggregate(ctx, pipeline, queryResponse, opts)
 }
-
-

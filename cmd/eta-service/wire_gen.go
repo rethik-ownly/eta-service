@@ -9,11 +9,20 @@ package main
 import (
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/dataclients"
+	"github.com/nutanalabs/eta-service/internal/dataclients/kafka"
 	"github.com/nutanalabs/eta-service/internal/dataclients/mongo"
 	"github.com/nutanalabs/eta-service/internal/eta-service"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
+	"github.com/nutanalabs/eta-service/internal/eta-service/validator"
+	"github.com/nutanalabs/eta-service/internal/geocache"
+	"github.com/nutanalabs/eta-service/internal/health"
+	"github.com/nutanalabs/eta-service/internal/httpclient"
+	"github.com/nutanalabs/eta-service/internal/metrics"
 	"github.com/nutanalabs/eta-service/internal/server"
+	"github.com/nutanalabs/eta-service/internal/serviceclients/routing-engine"
+	"github.com/nutanalabs/eta-service/internal/utils/common"
+	utils2 "github.com/nutanalabs/eta-service/internal/utils/http"
 )
 
 // Injectors from di.go:
@@ -23,13 +32,28 @@ func InitDependencies() (ServerDependencies, error) {
 	serverServer := server.NewServer(configConfig)
 	client := mongo.NewMongoClient(configConfig)
 	mongoRepository := mongo.NewMongoRepository(configConfig, client)
-	repositoryRepository := repository.NewRepository(mongoRepository)
-	serviceService := service.NewService(repositoryRepository)
-	handler := etaservice.NewHandler(serviceService)
-	handlers := server.Handlers{
-		ETAHandler: handler,
+	producerClient, err := kafka.NewKafkaProducerClient(configConfig)
+	if err != nil {
+		return ServerDependencies{}, err
 	}
-	dataClients := dataclients.NewDataClients(configConfig, client)
+	kafkaRepository := kafka.NewKafkaRepository(configConfig, producerClient)
+	repositoryRepository := repository.NewRepository(mongoRepository, kafkaRepository, configConfig)
+	commonUtils := utils.NewCommonUtils()
+	httpclientClient := httpclient.NewHTTPClient(configConfig)
+	routingEngineClient := routingengine.NewRoutingEngineClient(configConfig, httpclientClient)
+	geoCache := geocache.NewGeocache(configConfig)
+	geoRepository := geocache.NewGeoRepository(geoCache)
+	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient, geoRepository, configConfig)
+	httpUtils := utils2.NewHttpUtils()
+	validatorValidator := validator.NewValidator(configConfig)
+	metricsMetrics := metrics.NewMetrics()
+	handler := etaservice.NewHandler(serviceService, httpUtils, validatorValidator, metricsMetrics)
+	dataClients := dataclients.NewDataClients(configConfig, client, producerClient)
+	healthHandler := health.NewHandler(dataClients)
+	handlers := server.Handlers{
+		ETAHandler:    handler,
+		HealthHandler: healthHandler,
+	}
 	serverDependencies := ServerDependencies{
 		config:      configConfig,
 		server:      serverServer,

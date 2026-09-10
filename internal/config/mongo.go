@@ -36,6 +36,9 @@ type MongoConfig struct {
 	// Observability 
 	IsHealthCheckEnabled      bool
 	MonitorMongoDriverEnabled bool
+
+	// Batch Size
+	QueryBatchSize int
 }
 
 // TODO : Do we need Hidden Hosts ?
@@ -79,11 +82,11 @@ func (c *Config) GetMongoURI() string {
 }
 
 // Getters
-func (c *Config) GetUser() string {
+func (c *Config) GetMongoUser() string {
 	return c.Mongo.User
 }
 
-func (c *Config) GetDatabase() string {
+func (c *Config) GetMongoDatabase() string {
 	return c.Mongo.Database
 }
 

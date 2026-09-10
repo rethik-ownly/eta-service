@@ -1,0 +1,78 @@
+appName: {{ key "rapido/eta-service/svc/appName" }}
+
+server:
+  host: localhost
+  port: 8080
+
+mongo:
+  hosts: {{ key "rapido/mongo/eta-service/hosts" }}
+  user: {{ key "rapido/mongo/eta-service/read-write-user-name" }}
+  password: '{{ with secret "kv/data/rapido/mongo/eta-service-read-write-user-password" }}{{ .Data.data.value }}{{ end }}'
+  database: {{ key "rapido/mongo/eta-service/database" }}
+  authSource: {{ key "rapido/mongo/eta-service/authSource" }}
+  appName: {{ key "rapido/eta-service/svc/appName" }}
+  maxPoolSize: {{ key "rapido/eta-service/mongo/maxPoolSize" }}
+  maxConnecting: {{ key "rapido/eta-service/mongo/maxConnecting" }}
+  minPoolSize: {{ key "rapido/eta-service/mongo/minPoolSize" }}
+  writeTimeoutInMs: {{ key "rapido/eta-service/mongo/writeTimeoutInMs" }}
+  readTimeoutInMs: {{ key "rapido/eta-service/mongo/readTimeoutInMs" }}
+  maxIdleTimeInMs: {{ key "rapido/eta-service/mongo/maxIdleTimeInMs" }}
+  connectTimeoutInMs: {{ key "rapido/eta-service/mongo/connectTimeoutInMs" }}
+  replicaSet: {{ key "rapido/mongo/eta-service/replicaSet" }}
+  readPreference: {{ key "rapido/eta-service/mongo/readPreference" }}
+  retryWritesEnabled: {{ key "rapido/eta-service/mongo/retryWritesEnabled" }}
+  retryReadsEnabled: {{ key "rapido/eta-service/mongo/retryReadsEnabled" }}
+  isHealthCheckEnabled: {{ key "rapido/eta-service/mongo/isHealthCheckEnabled" }}
+  monitorMongoDriverEnabled: {{ key "rapido/eta-service/mongo/monitorMongoDriverEnabled" }}
+  queryBatchSize: {{ key "rapido/eta-service/mongo/queryBatchSize" }}
+
+redis:
+  hosts: '{{ key "rapido/redis/eta-service/hosts" }}'
+  password: '{{ with secret "kv/data/rapido/redis/eta-service-redis-password" }}{{ .Data.data.value }}{{ end }}'
+  connectionTimeoutInMs: {{ key "rapido/eta-service/redis/connectionTimeoutInMs" }}
+  queryTimeoutInMs: {{ key "rapido/eta-service/redis/queryTimeoutInMs" }}
+  isHealthCheckEnabled: {{ key "rapido/eta-service/redis/isHealthCheckEnabled" }}
+  isMetricsEnabled: {{ key "rapido/eta-service/redis/isMetricsEnabled" }}
+
+log:
+  level: {{ key "rapido/eta-service/svc/logLevel" }}
+
+httpTransport:
+  disableMetrics: {{ key "rapido/eta-service/httpTransport/disableMetrics" }}
+  maxIdleConnections: {{ key "rapido/eta-service/httpTransport/maxIdleConnections" }}
+  maxConnectionsPerHost: {{ key "rapido/eta-service/httpTransport/maxConnectionsPerHost" }}
+  maxIdleConnectionsPerHost: {{ key "rapido/eta-service/httpTransport/maxIdleConnectionsPerHost" }}
+  insecureSkipVerify: {{ key "rapido/eta-service/httpTransport/insecureSkipVerify" }}
+
+externalServices:
+  routingEngine:
+    host: {{ key "rapido/rapido-routing-engine/svc/host" }}
+    port: {{ key "rapido/rapido-routing-engine/svc/port" }}
+    distanceMatrixAPI:
+      path: {{ key "rapido/eta-service/externalServices/routingEngine_distanceMatrixAPI_path" }}
+      timeoutInMs: {{ key "rapido/eta-service/externalServices/routingEngine_distanceMatrixAPI_timeoutInMs" }}
+      qosLevel: {{ key "rapido/eta-service/externalServices/routingEngine_distanceMatrixAPI_qosLevel" }}
+
+eta:
+  maxEntities: {{ key "rapido/eta-service/eta/maxEntities" }}
+
+kafka:
+  isProducerHealthCheckEnabled: {{ key "rapido/eta-service/kafka/isProducerHealthCheckEnabled" }}
+  isConsumerHealthCheckEnabled: {{ key "rapido/eta-service/kafka/isConsumerHealthCheckEnabled" }}
+  consumersEnabled: {{ key "rapido/eta-service/kafka/consumersEnabled" }}
+  bootstrapServers: {{ key "rapido/kafka/broker/hosts" }}
+  groupId: {{ key "rapido/eta-service/kafka/groupId" }}
+  autoOffsetReset: {{ key "rapido/eta-service/kafka/autoOffsetReset" }}
+  enableAutoCommit: {{ key "rapido/eta-service/kafka/enableAutoCommit" }}
+  sessionTimeoutInMs: {{ key "rapido/eta-service/kafka/sessionTimeoutInMs" }}
+  lingerIntervalInMs: {{ key "rapido/eta-service/kafka/lingerIntervalInMs" }}
+  batchSizeInBytes: {{ key "rapido/eta-service/kafka/batchSizeInBytes" }}
+  shadowEventsEnabled: {{ key "rapido/eta-service/kafka/shadowEventsEnabled" }}
+
+etaDefaultEstimates:
+  restaurantAcceptanceTime: {{ key "rapido/eta-service/etaDefaultEstimates/restaurantAcceptanceTime" }}
+  captainAssignmentTime: {{ key "rapido/eta-service/etaDefaultEstimates/captainAssignmentTime" }}
+  firstMileTime: {{ key "rapido/eta-service/etaDefaultEstimates/firstMileTime" }}
+  delayDispatchTime: {{ key "rapido/eta-service/etaDefaultEstimates/delayDispatchTime" }}
+  kitchenPreparationTime: {{ key "rapido/eta-service/etaDefaultEstimates/kitchenPreparationTime" }}
+  pickupTime: {{ key "rapido/eta-service/etaDefaultEstimates/pickupTime" }}

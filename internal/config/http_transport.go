@@ -5,6 +5,7 @@ type HTTPTransportConfig struct {
 	MaxIdleConnections        int
 	MaxConnectionsPerHost     int
 	MaxIdleConnectionsPerHost int
+	InsecureSkipVerify        bool `mapstructure:"insecureSkipVerify"`
 }
 
 func (c *Config) GetMaxIdleConnections() int {
@@ -21,4 +22,8 @@ func (c *Config) GetMaxIdleConnectionsPerHost() int {
 
 func (c *Config) GetDisableMetricsConfig() bool {
 	return c.HTTPTransport.DisableMetrics
+}
+
+func (c *Config) GetInsecureSkipVerify() bool {
+	return c.HTTPTransport.InsecureSkipVerify
 }

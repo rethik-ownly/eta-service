@@ -1,11 +1,21 @@
 package httpclient
 
 import (
+	"crypto/tls"
+	"net/http"
+
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/rapido-http-go/v3/httpclient"
 )
 
 func NewHTTPClient(config *config.Config) httpclient.Client {
+	if config.GetInsecureSkipVerify() {
+		return httpclient.NewWithClient(&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		})
+	}
 	return httpclient.New(getHTTPClientSetting(config))
 }
 

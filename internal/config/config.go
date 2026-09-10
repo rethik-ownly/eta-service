@@ -12,9 +12,15 @@ var AppConfig Config
 type Config struct {
 	AppName string
 	Mongo  MongoConfig  `json:"mongo"`
+	Redis  RedisConfig  `mapstructure:"redis" json:"redis"`
 	Server ServerConfig `json:"server"`
 	Log    LogConfig    `json:"log"`
 	HTTPTransport HTTPTransportConfig `json:"http_transport"`
+	ExternalServices ExternalServicesConfig `mapstructure:"externalServices"`
+	Eta                 EtaConfig           `json:"eta" mapstructure:"eta"`
+	EtaDefaultEstimates EtaDefaultEstimates `mapstructure:"etaDefaultEstimates"`
+	Kafka               KafkaConfig         `json:"kafka" mapstructure:"kafka"`
+	GeoLayer 			GeoLayerConfig 		`mapstructure:"geoLayer"`
 }
 
 func InitDefaultConfig() *Config {
@@ -22,7 +28,6 @@ func InitDefaultConfig() *Config {
 }
 
 func InitConfig(configFile string) *Config {
-	fmt.Println(configFile)
 	viper.AutomaticEnv()
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
@@ -43,8 +48,6 @@ func InitConfig(configFile string) *Config {
 		logger.Error(logger.Format{Message: fmt.Sprintf("Cannot unmarshal the config File: %s", err)})
 		panic(err)
 	}
-
-	fmt.Println(AppConfig)
 
 	return &AppConfig
 }

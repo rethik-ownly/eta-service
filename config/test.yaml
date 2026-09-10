@@ -1,3 +1,5 @@
+appName: eta-service
+
 server:
   host: localhost
   port: 8082
@@ -28,6 +30,16 @@ mongo:
   isHealthCheckEnabled: true
   monitorMongoDriverEnabled: true
 
+  queryBatchSize: 100
+
+redis:
+  hosts: localhost:6379
+  password: ""
+  connectionTimeoutInMs: 1000
+  queryTimeoutInMs: 1000
+  isHealthCheckEnabled: true
+  isMetricsEnabled: true
+
 log:
   level: debug
 
@@ -36,3 +48,45 @@ httpTransport:
   maxIdleConnections: 10
   maxConnectionsPerHost: 5
   maxIdleConnectionsPerHost: 5
+  insecureSkipVerify: true
+
+externalServices:
+  routingEngine:
+    host: "https://rapido-routing-engine.nginx.svc.staging.internal"
+    port: 443
+    distanceMatrixAPI:
+      path: "/api/v1/routes/distanceMatrix"
+      timeoutInMs: 2000
+      qosLevel: "qos3"
+  
+eta:
+  maxEntities: 100
+
+kafka:
+  isProducerHealthCheckEnabled: true
+  isConsumerHealthCheckEnabled: true
+  consumersEnabled: true
+  bootstrapServers: localhost:9092
+  groupId: eta-service-group
+  autoOffsetReset: latest
+  enableAutoCommit: false
+  sessionTimeoutInMs: 10000
+  lingerIntervalInMs: 0
+  batchSizeInBytes: 1048576
+  shadowEventsEnabled: true
+
+etaDefaultEstimates:
+  restaurantAcceptanceTime: 300
+  captainAssignmentTime: 180
+  firstMileTime: 300
+  delayDispatchTime: 0
+  kitchenPreparationTime: 900
+  pickupTime: 600
+
+geoLayer:
+  host: https://geolayers-service.nginx.svc.staging.internal
+  port: 443
+  timeoutInMs: 5000
+  cache:
+    layers: ["city", "zone", "sub_locality"]
+    refreshIntervalInSeconds: 21600  # 6 hours
