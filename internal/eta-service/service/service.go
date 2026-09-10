@@ -7,6 +7,7 @@ import (
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/constants"
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
+	"github.com/nutanalabs/eta-service/internal/geocache"
 	routingengine "github.com/nutanalabs/eta-service/internal/serviceclients/routing-engine"
 	"github.com/nutanalabs/eta-service/internal/types"
 	common "github.com/nutanalabs/eta-service/internal/utils/common"
@@ -27,17 +28,20 @@ type serviceImpl struct {
 	repository    repository.Repository
 	commonUtils   common.CommonUtils
 	routingClient routingengine.RoutingEngineClient
+	geoRepository geocache.GeoRepository
 	config        *config.Config
 }
 
 func NewService(repository repository.Repository,
 	commonUtils common.CommonUtils,
 	routingClient routingengine.RoutingEngineClient,
+	geoRepository geocache.GeoRepository,
 	config *config.Config) Service {
 	return &serviceImpl{
 		repository:    repository,
 		commonUtils:   commonUtils,
 		routingClient: routingClient,
+		geoRepository: geoRepository,
 		config:        config,
 	}
 }
@@ -48,10 +52,32 @@ func (s *serviceImpl) FetchEta(request *types.FetchEtaRequest) ([]types.FetchEta
 	mealType := s.commonUtils.GetMealTypeFromTime(now)
 	batchSize := s.config.Mongo.QueryBatchSize
 
+	// Get cityID and zoneID from user location using geo-cache
+	var cityID, zoneID string
+	if s.geoRepository != nil {
+		cID, zID, err := s.geoRepository.FetchCityAndZone(request.UserLocation.Lat, request.UserLocation.Lng)
+		if err != nil {
+			logger.Warn(logger.Format{
+				Message: "Failed to get cityID and zoneID from geo-cache",
+				Data: map[string]string{
+					"lat": fmt.Sprintf("User Latitude: %f", request.UserLocation.Lat),
+					"lng":   fmt.Sprintf("User Longitude: %f", request.UserLocation.Lng),
+					"error": err.Error(),
+				},
+			})
+		} else {
+			cityID = cID
+			zoneID = zID
+			logger.Debug(logger.Format{
+				Message: "Resolved user location to cityID and zoneID",
+			})
+		}
+	}
+
 	sources, restaurantIDs := extractRestaurantLocationsAndIDs(request.Entities)
 
-	componentsByRestaurant, restaurantComponents, restaurantFailed := s.loadRestaurantComponents(restaurantIDs, day, mealType, batchSize)
-	componentsBySublocality, sublocalityFailed := s.loadSublocalityComponents(restaurantComponents, day, mealType, batchSize, restaurantFailed)
+	componentsByRestaurant, restaurantComponents, restaurantFailed := s.loadRestaurantComponents(restaurantIDs, cityID, zoneID, day, mealType, batchSize)
+	componentsBySublocality, sublocalityFailed := s.loadSublocalityComponents(restaurantComponents, cityID, zoneID, day, mealType, batchSize, restaurantFailed)
 
 	distanceMatrix, routingFailed := s.loadRoutingDistanceMatrix(request, sources)
 
@@ -127,11 +153,13 @@ func extractRestaurantLocationsAndIDs(entities []types.FetchEtaRequestEntity) ([
 
 func (s *serviceImpl) loadRestaurantComponents(
 	restaurantIDs []string,
+	cityID string,
+	zoneID string,
 	day constants.Day,
 	mealType constants.MealType,
 	batchSize int,
 ) (map[string]types.RestaurantComponents, []types.RestaurantComponents, bool) {
-	components, err := s.repository.FetchRestaurantComponentsByIDs(restaurantIDs, day, mealType, batchSize)
+	components, err := s.repository.FetchRestaurantComponentsByIDs(restaurantIDs, cityID, zoneID, day, mealType, batchSize)
 	if err != nil {
 		return nil, nil, true
 	}
@@ -145,6 +173,8 @@ func (s *serviceImpl) loadRestaurantComponents(
 
 func (s *serviceImpl) loadSublocalityComponents(
 	restaurantComponents []types.RestaurantComponents,
+	cityID string,
+	zoneID string,
 	day constants.Day,
 	mealType constants.MealType,
 	batchSize int,
@@ -155,7 +185,7 @@ func (s *serviceImpl) loadSublocalityComponents(
 	}
 
 	sublocalityIDs := uniqueSublocalityIDs(restaurantComponents)
-	components, err := s.repository.FetchSublocalityComponentsByIDs(sublocalityIDs, day, mealType, batchSize)
+	components, err := s.repository.FetchSublocalityComponentsByIDs(sublocalityIDs, cityID, zoneID, day, mealType, batchSize)
 	if err != nil {
 		return nil, true
 	}

@@ -82,3 +82,11 @@ etaDefaultEstimates:
   delayDispatchTime: 0
   kitchenPreparationTime: 900
   pickupTime: 600
+
+geoLayer:
+  host: https://geolayers-service.nginx.svc.staging.internal
+  port: 443
+  timeoutInMs: 5000
+  cache:
+    layers: ["city", "zone", "sub_locality"]
+    refreshIntervalInSeconds: 21600  # 6 hours

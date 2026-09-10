@@ -57,18 +57,18 @@ func (mr *MockRepositoryMockRecorder) FetchRestaurantComponents(restaurantId, da
 }
 
 // FetchRestaurantComponentsByIDs mocks base method.
-func (m *MockRepository) FetchRestaurantComponentsByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.RestaurantComponents, error) {
+func (m *MockRepository) FetchRestaurantComponentsByIDs(restaurantsId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.RestaurantComponents, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchRestaurantComponentsByIDs", restaurantsId, day, mealType, batchSize)
+	ret := m.ctrl.Call(m, "FetchRestaurantComponentsByIDs", restaurantsId, cityID, zoneID, day, mealType, batchSize)
 	ret0, _ := ret[0].([]types.RestaurantComponents)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchRestaurantComponentsByIDs indicates an expected call of FetchRestaurantComponentsByIDs.
-func (mr *MockRepositoryMockRecorder) FetchRestaurantComponentsByIDs(restaurantsId, day, mealType, batchSize any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FetchRestaurantComponentsByIDs(restaurantsId, cityID, zoneID, day, mealType, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchRestaurantComponentsByIDs", reflect.TypeOf((*MockRepository)(nil).FetchRestaurantComponentsByIDs), restaurantsId, day, mealType, batchSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchRestaurantComponentsByIDs", reflect.TypeOf((*MockRepository)(nil).FetchRestaurantComponentsByIDs), restaurantsId, cityID, zoneID, day, mealType, batchSize)
 }
 
 // FetchSublocalityComponents mocks base method.
@@ -87,18 +87,18 @@ func (mr *MockRepositoryMockRecorder) FetchSublocalityComponents(sublocalityId, 
 }
 
 // FetchSublocalityComponentsByIDs mocks base method.
-func (m *MockRepository) FetchSublocalityComponentsByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.SublocalityComponents, error) {
+func (m *MockRepository) FetchSublocalityComponentsByIDs(sublocalitiesId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.SublocalityComponents, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchSublocalityComponentsByIDs", sublocalitiesId, day, mealType, batchSize)
+	ret := m.ctrl.Call(m, "FetchSublocalityComponentsByIDs", sublocalitiesId, cityID, zoneID, day, mealType, batchSize)
 	ret0, _ := ret[0].([]types.SublocalityComponents)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchSublocalityComponentsByIDs indicates an expected call of FetchSublocalityComponentsByIDs.
-func (mr *MockRepositoryMockRecorder) FetchSublocalityComponentsByIDs(sublocalitiesId, day, mealType, batchSize any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FetchSublocalityComponentsByIDs(sublocalitiesId, cityID, zoneID, day, mealType, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchSublocalityComponentsByIDs", reflect.TypeOf((*MockRepository)(nil).FetchSublocalityComponentsByIDs), sublocalitiesId, day, mealType, batchSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchSublocalityComponentsByIDs", reflect.TypeOf((*MockRepository)(nil).FetchSublocalityComponentsByIDs), sublocalitiesId, cityID, zoneID, day, mealType, batchSize)
 }
 
 // InsertRestaurantComponents mocks base method.

@@ -34,7 +34,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.commonUtilsMock = common.NewMockCommonUtils(s.ctrl)
 	s.routingClientMock = routingengine.NewMockRoutingEngineClient(s.ctrl)
 
-	s.svc = NewService(s.repoMock, s.commonUtilsMock, s.routingClientMock, s.config)
+	s.svc = NewService(s.repoMock, s.commonUtilsMock, s.routingClientMock, nil, s.config)
 }
 
 func (s *ServiceTestSuite) TestFetchEta_HappyPath_ReturnsHistoricEta() {
@@ -76,7 +76,7 @@ func (s *ServiceTestSuite) TestFetchEta_HappyPath_ReturnsHistoricEta() {
 
 	s.repoMock.
 		EXPECT().
-		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchRestaurantComponentsByIDs([]string{"rest-1"}, "", "", constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(restaurantComponents, nil).
 		Times(1)
 
@@ -92,7 +92,7 @@ func (s *ServiceTestSuite) TestFetchEta_HappyPath_ReturnsHistoricEta() {
 
 	s.repoMock.
 		EXPECT().
-		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchSublocalityComponentsByIDs([]string{"sub-1"}, "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(sublocalityComponents, nil).
 		Times(1)
 
@@ -170,7 +170,7 @@ func (s *ServiceTestSuite) TestFetchEta_RoutingFails_UsesHaversineFallback() {
 
 	s.repoMock.
 		EXPECT().
-		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchRestaurantComponentsByIDs([]string{"rest-1"}, "", "", constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(restaurantComponents, nil).
 		Times(1)
 
@@ -186,7 +186,7 @@ func (s *ServiceTestSuite) TestFetchEta_RoutingFails_UsesHaversineFallback() {
 
 	s.repoMock.
 		EXPECT().
-		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchSublocalityComponentsByIDs([]string{"sub-1"},  "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(sublocalityComponents, nil).
 		Times(1)
 
@@ -243,7 +243,7 @@ func (s *ServiceTestSuite) TestFetchEta_RestaurantMongoFails_UsesDefaultEstimate
 
 	s.repoMock.
 		EXPECT().
-		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchRestaurantComponentsByIDs([]string{"rest-1"},  "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(nil, fmt.Errorf("restaurant mongo query fails")).
 		Times(1)
 	
@@ -319,13 +319,13 @@ func (s *ServiceTestSuite) TestFetchEta_SublocalityMongoFails_UsesDefaultSubloca
 
 	s.repoMock.
 		EXPECT().
-		FetchRestaurantComponentsByIDs([]string{"rest-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchRestaurantComponentsByIDs([]string{"rest-1"},  "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(restaurantComponents, nil).
 		Times(1)
 
 	s.repoMock.
 		EXPECT().
-		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchSublocalityComponentsByIDs([]string{"sub-1"},  "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(nil, fmt.Errorf("sublocality mongo query fails")).
 		Times(1)
 
@@ -407,7 +407,7 @@ func (s *ServiceTestSuite) TestFetchEta_MultipleEntities_MixedFallbackSources() 
 
 	s.repoMock.
 		EXPECT().
-		FetchRestaurantComponentsByIDs([]string{"rest-1", "rest-2"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchRestaurantComponentsByIDs([]string{"rest-1", "rest-2"},  "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(restaurantComponents, nil).
 		Times(1)
 
@@ -423,7 +423,7 @@ func (s *ServiceTestSuite) TestFetchEta_MultipleEntities_MixedFallbackSources() 
 
 	s.repoMock.
 		EXPECT().
-		FetchSublocalityComponentsByIDs([]string{"sub-1"}, constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
+		FetchSublocalityComponentsByIDs([]string{"sub-1"},  "", "",constants.Monday, constants.Lunch, s.config.Mongo.QueryBatchSize).
 		Return(sublocalityComponents, nil).
 		Times(1)
 

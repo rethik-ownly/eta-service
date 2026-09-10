@@ -76,7 +76,7 @@ func (c *clientImpl) CheckHealth() error {
 }
 
 func (c *clientImpl) GetDatabase() *mongo.Database {
-	return c.client.Database(c.config.GetDatabase())
+	return c.client.Database(c.config.GetMongoDatabase())
 }
 
 func (c *clientImpl) Disconnect() error {

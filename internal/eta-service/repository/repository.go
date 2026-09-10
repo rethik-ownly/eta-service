@@ -22,8 +22,8 @@ import (
 type Repository interface {
 	FetchRestaurantComponents(restaurantId string, day constants.Day, mealType constants.MealType) (*types.RestaurantComponents, error)
 	FetchSublocalityComponents(sublocalityId string, day constants.Day, mealType constants.MealType) (*types.SublocalityComponents, error)
-	FetchRestaurantComponentsByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.RestaurantComponents, error)
-	FetchSublocalityComponentsByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.SublocalityComponents, error)
+	FetchRestaurantComponentsByIDs(restaurantsId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.RestaurantComponents, error)
+	FetchSublocalityComponentsByIDs(sublocalitiesId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.SublocalityComponents, error)
 
 	RestaurantDayOverlapExists(restaurantId string, days []constants.Day) (bool, error)
 	SublocalityDayOverlapExists(sublocalityId string, days []constants.Day) (bool, error)
@@ -83,23 +83,34 @@ func (r *repositoryImpl) FetchSublocalityComponents(sublocalityId string, day co
 	return &components, nil
 }
 
-func (r *repositoryImpl) FetchRestaurantComponentsByIDs(restaurantsId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.RestaurantComponents, error) {
+func (r *repositoryImpl) FetchRestaurantComponentsByIDs(restaurantsId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.RestaurantComponents, error) {
 	if batchSize <= 0 {
 		return nil, fmt.Errorf("invalid mongo queryBatchSize: %d", batchSize)
 	}
 
 	return fetchInBatches(restaurantsId, batchSize, func(batch []string) ([]types.RestaurantComponents, error) {
-		return r.fetchRestaurantComponentsByIDsBatch(batch, day, mealType)
+		return r.fetchRestaurantComponentsByIDsBatch(batch, cityID, zoneID, day, mealType)
 	})
 }
 
-func (r *repositoryImpl) fetchRestaurantComponentsByIDsBatch(restaurantsId []string, day constants.Day, mealType constants.MealType) ([]types.RestaurantComponents, error) {
+func (r *repositoryImpl) fetchRestaurantComponentsByIDsBatch(restaurantsId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType) ([]types.RestaurantComponents, error) {
 	filter := bson.M{
 		"restaurantId": bson.M{
 			"$in": restaurantsId,
 		},
 		"dayType": day,
 	}
+
+	// Add cityID filter if provided for optimized query
+	if cityID != "" {
+		filter["cityId"] = cityID
+	}
+
+	// Add zoneID filter if provided for optimized query
+	if zoneID != "" {
+		filter["zoneId"] = zoneID
+	}
+
 	opts := options.Find().SetProjection(restaurantMealProjection(mealType))
 
 	var restaurantComponents []types.RestaurantComponents
@@ -120,23 +131,34 @@ func (r *repositoryImpl) fetchRestaurantComponentsByIDsBatch(restaurantsId []str
 	return []types.RestaurantComponents{}, nil
 }
 
-func (r *repositoryImpl) FetchSublocalityComponentsByIDs(sublocalitiesId []string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.SublocalityComponents, error) {
+func (r *repositoryImpl) FetchSublocalityComponentsByIDs(sublocalitiesId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType, batchSize int) ([]types.SublocalityComponents, error) {
 	if batchSize <= 0 {
 		return nil, fmt.Errorf("invalid mongo queryBatchSize: %d", batchSize)
 	}
 
 	return fetchInBatches(sublocalitiesId, batchSize, func(batch []string) ([]types.SublocalityComponents, error) {
-		return r.fetchSublocalityComponentsByIDsBatch(batch, day, mealType)
+		return r.fetchSublocalityComponentsByIDsBatch(batch, cityID, zoneID, day, mealType)
 	})
 }
 
-func (r *repositoryImpl) fetchSublocalityComponentsByIDsBatch(sublocalitiesId []string, day constants.Day, mealType constants.MealType) ([]types.SublocalityComponents, error) {
+func (r *repositoryImpl) fetchSublocalityComponentsByIDsBatch(sublocalitiesId []string, cityID, zoneID string, day constants.Day, mealType constants.MealType) ([]types.SublocalityComponents, error) {
 	filter := bson.M{
 		"sublocalityId": bson.M{
 			"$in": sublocalitiesId,
 		},
 		"dayType": day,
 	}
+
+	// Add cityID filter if provided for optimized query
+	if cityID != "" {
+		filter["cityId"] = cityID
+	}
+
+	// Add zoneID filter if provided for optimized query
+	if zoneID != "" {
+		filter["zoneId"] = zoneID
+	}
+
 	opts := options.Find().SetProjection(sublocalityMealProjection(mealType))
 
 	var sublocalityComponents []types.SublocalityComponents

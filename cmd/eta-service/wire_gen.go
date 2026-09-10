@@ -15,6 +15,7 @@ import (
 	"github.com/nutanalabs/eta-service/internal/eta-service/repository"
 	"github.com/nutanalabs/eta-service/internal/eta-service/service"
 	"github.com/nutanalabs/eta-service/internal/eta-service/validator"
+	"github.com/nutanalabs/eta-service/internal/geocache"
 	"github.com/nutanalabs/eta-service/internal/health"
 	"github.com/nutanalabs/eta-service/internal/httpclient"
 	"github.com/nutanalabs/eta-service/internal/metrics"
@@ -40,7 +41,9 @@ func InitDependencies() (ServerDependencies, error) {
 	commonUtils := utils.NewCommonUtils()
 	httpclientClient := httpclient.NewHTTPClient(configConfig)
 	routingEngineClient := routingengine.NewRoutingEngineClient(configConfig, httpclientClient)
-	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient, configConfig)
+	geoCache := geocache.NewGeocache(configConfig)
+	geoRepository := geocache.NewGeoRepository(geoCache)
+	serviceService := service.NewService(repositoryRepository, commonUtils, routingEngineClient, geoRepository, configConfig)
 	httpUtils := utils2.NewHttpUtils()
 	validatorValidator := validator.NewValidator(configConfig)
 	metricsMetrics := metrics.NewMetrics()

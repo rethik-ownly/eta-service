@@ -7,6 +7,7 @@ import (
 	"github.com/nutanalabs/eta-service/internal/config"
 	"github.com/nutanalabs/eta-service/internal/dataclients"
 	etaservice "github.com/nutanalabs/eta-service/internal/eta-service"
+	"github.com/nutanalabs/eta-service/internal/geocache"
 	"github.com/nutanalabs/eta-service/internal/health"
 	"github.com/nutanalabs/eta-service/internal/httpclient"
 	"github.com/nutanalabs/eta-service/internal/server"
@@ -31,6 +32,7 @@ func InitDependencies() (ServerDependencies, error) {
 		httpclient.Wireset,
 		etaservice.Wireset,
 		dataclients.Wireset,
+		geocache.Wireset,
 		health.Wireset,
 		utils.Wireset,
 		routingengine.Wireset,

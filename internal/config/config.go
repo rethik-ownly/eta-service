@@ -20,6 +20,7 @@ type Config struct {
 	Eta                 EtaConfig           `json:"eta" mapstructure:"eta"`
 	EtaDefaultEstimates EtaDefaultEstimates `mapstructure:"etaDefaultEstimates"`
 	Kafka               KafkaConfig         `json:"kafka" mapstructure:"kafka"`
+	GeoLayer 			GeoLayerConfig 		`mapstructure:"geoLayer"`
 }
 
 func InitDefaultConfig() *Config {
