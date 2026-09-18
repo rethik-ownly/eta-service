@@ -13,15 +13,6 @@ const (
 	subLocalityLayerType = "sub_locality"
 )
 
-type LocationDetails struct {
-	CityID       string
-	CityName     string
-	ZoneID       string
-	ZoneName     string
-	LocalityID   string
-	LocalityName string
-}
-
 type GeoRepository interface {
 	FetchCity(lat, lng float64) (string, error)
 	FetchZone(lat, lng float64) (string, error)
@@ -206,12 +197,3 @@ func (r *geoRepositoryImpl) fetchFirstLayer(layerType string, lat, lng float64) 
 	return info, nil
 }
 
-type layerInfo struct {
-	ID         string
-	Name       string
-	Properties *layerProperties
-}
-
-type layerProperties struct {
-	CityID string
-}
